@@ -478,11 +478,10 @@ namespace MikuMikuWorld
 				// score.notes.reserve(score.notes.size() + damageCount); // Already reserved or can grow
 				for (int i = 0; i < damageCount; ++i)
 				{
-					Note note = readNote(NoteType::Damage, &reader, cyanvasVersion);
-					note.ID = Note::getNextID();
-					// Note: Damage notes are kept as Damage type if read from old files.
-					// Game logic will decide how to handle/ignore them.
-					score.notes[note.ID] = note;
+					// Read and discard old damage note data
+					// Use NoteType::Slide (formerly Tap) as a placeholder for the byte structure
+					readNote(NoteType::Slide, &reader, cyanvasVersion); 
+					// Do not assign ID or add to score.notes
 				}
 			}
 		}

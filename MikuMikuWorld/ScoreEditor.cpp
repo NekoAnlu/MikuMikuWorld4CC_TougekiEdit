@@ -22,14 +22,24 @@ using nlohmann::json;
 namespace MikuMikuWorld
 {
 	static MultiInputBinding* timelineModeBindings[] = {
-		&config.input.timelineSelect,        &config.input.timelineTap,
-		&config.input.timelineHold,          &config.input.timelineHoldMid,
-		&config.input.timelineFlick,         &config.input.timelineCritical,
-		&config.input.timelineFriction,      &config.input.timelineGuide,
-		&config.input.timelineDamage,        &config.input.timelineBpm, // Damage is removed, Event will go here
-		&config.input.timelineTimeSignature, &config.input.timelineHiSpeed,
-		&config.input.timelineDamage, // Placeholder for Event binding, reusing Damage
+		&config.input.timelineSelect,
+		&config.input.timelineSlide, // Changed from timelineTap
+		&config.input.timelineHold,
+		&config.input.timelineHoldMid,
+		&config.input.timelineFlick,
+		&config.input.timelineCritical,
+		&config.input.timelineFriction,
+		&config.input.timelineGuide,
+		// timelineDamage removed here (was between guide and bpm)
+		&config.input.timelineBpm,
+		&config.input.timelineTimeSignature,
+		&config.input.timelineHiSpeed,
+		// Second timelineDamage (event placeholder) also removed as Event mode is not yet bound
 	};
+	// This array should now have 11 elements, matching the updated TimelineMode enum
+	// (Select, Slide, Long, LongMid, Flick, Critical, Friction, Guide, BPM, TimeSign, HiSpeed)
+	// and the updated InputConfiguration struct.
+
 	// Need to update TimelineMode enum and timelineModes array string simultaneously
 	// Assuming TimelineMode::InsertEvent is added before TimelineModeMax
 	// And "event" is added to timelineModes array in ScoreEditorTimeline.cpp or relevant header
@@ -926,44 +936,47 @@ namespace MikuMikuWorld
 
 		UI::toolbarSeparator();
 
-		// Assuming timelineModes array (in ScoreEditorTimeline.cpp or header) is updated with "event"
-		// And TimelineMode enum has InsertEvent
-		for (int i = 0; i < (int)TimelineMode::TimelineModeMax; ++i)
+		// Loop condition changed to use arrayLength(timelineModes)
+		// timelineModes is defined in TimelineMode.h and should now have 11 elements
+		for (int i = 0; i < arrayLength(timelineModes); ++i)
 		{
-			// Temporary: Use a placeholder for Event mode icon name if timelineModes[i] for event is not set up for icons
-			std::string modeName = "";
-			if (i < arrayLength(timelineModes)) modeName = timelineModes[i]; // Use existing names
-			else if ((TimelineMode)i == TimelineMode::InsertEvent) modeName = "event"; // Conceptual name for InsertEvent
-
-			if (modeName.empty()) continue; // Should not happen if TimelineModeMax is correct
-
+			// The timelineModes array from TimelineMode.h now correctly reflects the available modes.
+			// No need for special handling for InsertEvent here as it's not an active mode yet.
+			// If InsertEvent were added to timelineModes and timelineModeBindings, this loop would include it.
+			std::string modeName = timelineModes[i];
 			std::string img{ IO::concat("timeline", modeName, "_") };
-			if ((TimelineMode)i == TimelineMode::InsertFlick) // Cast i to TimelineMode for comparison
+			
+			// This logic assumes that the order in timelineModes string array
+			// and TimelineMode enum is IDENTICAL to the order in timelineModeBindings array.
+			// Current TimelineMode enum (after changes): Select, InsertSlide, InsertLong, InsertLongMid, InsertFlick,
+			// MakeCritical, MakeFriction, InsertGuide, InsertBPM, InsertTimeSign, InsertHiSpeed. (11 modes)
+			// Current timelineModes string array: "select", "slide", "hold", "hold_step", "flick", "critical", 
+			// "trace", "guide", "bpm", "time_signature", "hi_speed". (11 strings)
+			// Current timelineModeBindings array (after this change): 11 bindings.
+
+			TimelineMode currentLoopMode = static_cast<TimelineMode>(i); // Relies on enum values being 0-indexed sequential
+
+			if (currentLoopMode == TimelineMode::InsertFlick)
 				img.append("_").append(toolbarFlickNames[(int)edit.flickType]);
-			else if ((TimelineMode)i == TimelineMode::InsertLongMid)
+			else if (currentLoopMode == TimelineMode::InsertLongMid)
 				img.append("_").append(toolbarStepNames[(int)edit.stepType]);
-			else if ((TimelineMode)i == TimelineMode::InsertGuide)
+			else if (currentLoopMode == TimelineMode::InsertGuide)
 			{
 				img.append("_").append(guideColors[(int)edit.colorType]);
 				img.append("_").append(
 				    std::string(fadeTypes[(int)edit.fadeType]).substr(5).c_str());
 			}
-			else if ((TimelineMode)i == TimelineMode::InsertEvent) {
-				// Use a placeholder icon for Event, e.g., an existing one like "tap" or a specific "event" icon if available
-				img = "timelineevent_"; // Or "timelinetap_" as placeholder
-			}
+			// No InsertEvent specific icon logic here as it's not an active mode with a binding/icon yet.
 
-
-			if (timelineModeBindings[i] && UI::toolbarImageButton(img.c_str(), getString(modeName.c_str()), // getString might need "event" key
-			                           ToShortcutString(*timelineModeBindings[i]), true,
-			                           (int)timeline.getMode() == i))
-				timeline.changeMode((TimelineMode)i, edit);
-			else if (!timelineModeBindings[i] && (TimelineMode)i == TimelineMode::InsertEvent) { // Fallback for unbound Event mode button
+			// Ensure that 'i' is a valid index for timelineModeBindings
+			if (i < arrayLength(timelineModeBindings)) // arrayLength would need to be defined for pointers too, or use a fixed size
+			{
 				if (UI::toolbarImageButton(img.c_str(), getString(modeName.c_str()),
-											"---", true, // No shortcut displayed
-											(int)timeline.getMode() == i))
-					timeline.changeMode((TimelineMode)i, edit);
+				                           ToShortcutString(*timelineModeBindings[i]), true,
+				                           timeline.getMode() == currentLoopMode))
+					timeline.changeMode(currentLoopMode, edit);
 			}
+			// This else-if for unbound Event mode button is removed as Event mode is not being added here.
 		}
 
 		ImGui::PopStyleColor(3);

@@ -6,23 +6,23 @@ namespace MikuMikuWorld
 	enum class TimelineMode : uint8_t
 	{
 		Select,
-		InsertTap,
+		InsertSlide, // Renamed from InsertTap
 		InsertLong,
 		InsertLongMid,
 		InsertFlick,
 		MakeCritical,
 		MakeFriction,
 		InsertGuide,
-		InsertDamage,
+		// InsertDamage, // Removed
 		InsertBPM,
 		InsertTimeSign,
 		InsertHiSpeed,
-		TimelineModeMax
+		TimelineModeMax // This might need adjustment if enum count changes affect anything
 	};
 
-	constexpr const char* timelineModes[]{ "select", "tap",      "hold",           "hold_step",
+	constexpr const char* timelineModes[]{ "select", "slide",    "hold",           "hold_step", // Renamed "tap" to "slide"
 		                                   "flick",  "critical", "trace",          "guide",
-		                                   "damage", "bpm",      "time_signature", "hi_speed" };
+		                                   /*"damage",*/ "bpm",      "time_signature", "hi_speed" }; // Removed "damage"
 
 	constexpr int divisions[]{ 4, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192 };
 

@@ -153,13 +153,13 @@ namespace MikuMikuWorld
 
 		struct InputNotes
 		{
-			Note tap;
+			Note slide; // Renamed from tap
 			Note holdStart;
 			Note holdEnd;
 			Note holdStep;
-			Note damage;
-		} inputNotes{ Note(NoteType::Tap), Note(NoteType::Hold), Note(NoteType::HoldEnd),
-			          Note(NoteType::HoldMid), Note(NoteType::Damage) };
+			// Note damage; // Removed
+		} inputNotes{ Note(NoteType::Slide), Note(NoteType::Hold), Note(NoteType::HoldEnd),
+			          Note(NoteType::HoldMid) /* Removed Note(NoteType::Damage) */ };
 
 		struct NoteTransform
 		{
@@ -248,24 +248,7 @@ namespace MikuMikuWorld
 		bool drawHoldStepOutlines = true;
 		Background background;
 
-		// Forward declaration
-		enum class EventType; 
-
-		struct EventEditParams
-		{
-			EventType type = EventType::None; 
-			id_t editId = static_cast<id_t>(-1);
-
-			float editBpm = 120.0f;
-			int editTimeSignatureNumerator = 4;
-			int editTimeSignatureDenominator = 4;
-
-			float editHiSpeed = 1.0f;
-
-			std::string editName = "";
-		} eventEdit{};
-		
-		id_t currentSelectedEventId = -1; // Used to track which event's context menu might be open or being interacted with
+		// Removed EventType forward declaration, EventEditParams struct, and currentSelectedEventId
 
 		int snapTickFromPos(double posY) const;
 		int positionToTick(double pos) const;

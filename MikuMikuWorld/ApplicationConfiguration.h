@@ -52,7 +52,7 @@ namespace MikuMikuWorld
 		MultiInputBinding timelineSelect = { "timeline_select",
 			                                 { ImGuiKey_1 },
 			                                 { ImGuiKey_Keypad1 } };
-		MultiInputBinding timelineTap = { "timeline_tap", { ImGuiKey_2 }, { ImGuiKey_Keypad2 } };
+		MultiInputBinding timelineSlide = { "timeline_slide", { ImGuiKey_2 }, { ImGuiKey_Keypad2 } }; // Renamed from timelineTap
 		MultiInputBinding timelineHold = { "timeline_hold", { ImGuiKey_3 }, { ImGuiKey_Keypad3 } };
 		MultiInputBinding timelineHoldMid = { "timeline_hold_step",
 			                                  { ImGuiKey_4 },
@@ -67,7 +67,7 @@ namespace MikuMikuWorld
 			                                   { ImGuiKey_7 },
 			                                   { ImGuiKey_Keypad7 } };
 		MultiInputBinding timelineGuide = { "timeline_guide", {} };
-		MultiInputBinding timelineDamage = { "timeline_damage", {} };
+		// MultiInputBinding timelineDamage = { "timeline_damage", {} }; // Removed
 		MultiInputBinding timelineBpm = { "timeline_bpm", { ImGuiKey_8 }, { ImGuiKey_Keypad8 } };
 		MultiInputBinding timelineTimeSignature = { "timeline_time_signature",
 			                                        { ImGuiKey_9 },
@@ -174,14 +174,14 @@ namespace MikuMikuWorld
 		&config.input.zoomIn,
 
 		&config.input.timelineSelect,
-		&config.input.timelineTap,
+		&config.input.timelineSlide, // Renamed from timelineTap
 		&config.input.timelineHold,
 		&config.input.timelineHoldMid,
 		&config.input.timelineFlick,
 		&config.input.timelineCritical,
 		&config.input.timelineFriction,
 		&config.input.timelineGuide,
-		&config.input.timelineDamage,
+		// &config.input.timelineDamage, // Removed
 		&config.input.timelineBpm,
 		&config.input.timelineTimeSignature,
 		&config.input.timelineHiSpeed,

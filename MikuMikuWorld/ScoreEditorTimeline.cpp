@@ -705,55 +705,34 @@ namespace MikuMikuWorld
 		// Update hi-speed changes
 		for (auto& [id, hiSpeed] : context.score.hiSpeedChanges)
 		{
-			if (hiSpeedControl(context, hiSpeed))
-			{
-				eventEdit.editId = id;
-				eventEdit.editHiSpeed = hiSpeed.speed;
-				eventEdit.type = EventType::HiSpeed;
-				ImGui::OpenPopup("edit_event");
-			}
+			// Call hiSpeedControl for drawing, but remove popup logic
+			hiSpeedControl(context, hiSpeed);
 		}
 
 		// Update time signature changes
 		for (auto& [measure, ts] : context.score.timeSignatures)
 		{
-			if (timeSignatureControl(
+			// Call timeSignatureControl for drawing, but remove popup logic
+			timeSignatureControl(
 			        context.score, ts.numerator, ts.denominator,
 			        measureToTicks(ts.measure, TICKS_PER_BEAT, context.score.timeSignatures),
-			        !playing))
-			{
-				eventEdit.editId = measure;
-				eventEdit.editTimeSignatureNumerator = ts.numerator;
-				eventEdit.editTimeSignatureDenominator = ts.denominator;
-				eventEdit.type = EventType::TimeSignature;
-				ImGui::OpenPopup("edit_event");
-			}
+			        !playing);
 		}
 
 		// Update bpm changes
 		for (int index = 0; index < context.score.tempoChanges.size(); ++index)
 		{
 			Tempo& tempo = context.score.tempoChanges[index];
-			if (bpmControl(context.score, tempo))
-			{
-				eventEdit.editId = index;
-				eventEdit.editBpm = tempo.bpm;
-				eventEdit.type = EventType::Bpm;
-				ImGui::OpenPopup("edit_event");
-			}
+			// Call bpmControl for drawing, but remove popup logic
+			bpmControl(context.score, tempo);
 		}
 
 		// Update waypoints
 		for (int index = 0; index < context.score.waypoints.size(); ++index)
 		{
 			Waypoint& wp = context.score.waypoints[index];
-			if (waypointControl(context.score, wp))
-			{
-				eventEdit.editId = index;
-				eventEdit.editName = wp.name;
-				eventEdit.type = EventType::Waypoint;
-				ImGui::OpenPopup("edit_event");
-			}
+			// Call waypointControl for drawing, but remove popup logic
+			waypointControl(context.score, wp);
 		}
 
 		// Update song boundaries
@@ -778,7 +757,7 @@ namespace MikuMikuWorld
 		for (const auto& [_, skill] : context.score.skills)
 			skillControl(context.score, skill);
 
-		eventEditor(context);
+		// Removed eventEditor(context); call
 		updateNotes(context, edit, renderer);
 
 		// Update cursor tick after determining whether a note is hovered
@@ -2544,188 +2523,7 @@ namespace MikuMikuWorld
 	// Assuming EventType enum and eventTypes array are defined somewhere accessible,
 	// e.g. globally in this CPP or in a shared header.
 	// For this example, I'll assume EventType::Custom is added to such an enum.
-	// And "custom_event" is added to the eventTypes string array.
-	// enum class EventType { None, Bpm, TimeSignature, HiSpeed, Waypoint, Custom };
-	// const char* eventTypes[] = { "none", "bpm", "time_signature", "hi_speed", "waypoint", "custom_event" };
-
-	void ScoreEditorTimeline::eventEditor(ScoreContext& context)
-	{
-		ImGui::SetNextWindowSize(ImVec2(250, -1), ImGuiCond_Always);
-		if (ImGui::BeginPopup("edit_event"))
-		{
-			std::string editLabel{ "edit_" };
-			// Ensure EventType::Custom (or whatever new type) is handled by eventTypes or provide a default
-			if (eventEdit.type < EventType::EventTypeMax) { // Assuming EventTypeMax exists in the enum
-				editLabel.append(eventTypes[(int)eventEdit.type]);
-			} else if (eventEdit.type == EventType::Custom) { // Explicitly handle new event type
-				editLabel.append(getString("custom_event")); // TODO: Localize "custom_event"
-			} else {
-				editLabel.append("unknown_event_type");
-			}
-
-			ImGui::Text(getString(editLabel));
-			ImGui::Separator();
-
-			if (eventEdit.type == EventType::Bpm)
-			{
-				if (!isArrayIndexInBounds(eventEdit.editId, context.score.tempoChanges))
-				{
-					ImGui::CloseCurrentPopup();
-					ImGui::EndPopup();
-					return;
-				}
-
-				UI::beginPropertyColumns();
-
-				Tempo& tempo = context.score.tempoChanges[eventEdit.editId];
-				UI::addFloatProperty(getString("bpm"), eventEdit.editBpm, "%g");
-				if (ImGui::IsItemDeactivatedAfterEdit())
-				{
-					Score prev = context.score;
-					tempo.bpm = std::clamp(eventEdit.editBpm, MIN_BPM, MAX_BPM);
-
-					context.pushHistory("Change tempo", prev, context.score);
-				}
-				UI::endPropertyColumns();
-
-				// cannot remove the first tempo change
-				if (tempo.tick != 0)
-				{
-					ImGui::Separator();
-					if (ImGui::Button(getString("remove"), ImVec2(-1, UI::btnSmall.y + 2)))
-					{
-						ImGui::CloseCurrentPopup();
-						Score prev = context.score;
-						context.score.tempoChanges.erase(context.score.tempoChanges.begin() +
-						                                 eventEdit.editId);
-						context.pushHistory("Remove tempo change", prev, context.score);
-					}
-				}
-			}
-			else if (eventEdit.type == EventType::TimeSignature)
-			{
-				if (context.score.timeSignatures.find(eventEdit.editId) ==
-				    context.score.timeSignatures.end())
-				{
-					ImGui::CloseCurrentPopup();
-					ImGui::EndPopup();
-					return;
-				}
-
-				UI::beginPropertyColumns();
-				if (UI::timeSignatureSelect(eventEdit.editTimeSignatureNumerator,
-				                            eventEdit.editTimeSignatureDenominator))
-				{
-					Score prev = context.score;
-					TimeSignature& ts = context.score.timeSignatures[eventEdit.editId];
-					ts.numerator = std::clamp(abs(eventEdit.editTimeSignatureNumerator),
-					                          MIN_TIME_SIGNATURE, MAX_TIME_SIGNATURE_NUMERATOR);
-					ts.denominator = std::clamp(abs(eventEdit.editTimeSignatureDenominator),
-					                            MIN_TIME_SIGNATURE, MAX_TIME_SIGNATURE_DENOMINATOR);
-
-					context.pushHistory("Change time signature", prev, context.score);
-				}
-				UI::endPropertyColumns();
-
-				// cannot remove the first time signature
-				if (eventEdit.editId != 0)
-				{
-					ImGui::Separator();
-					if (ImGui::Button(getString("remove"), ImVec2(-1, UI::btnSmall.y + 2)))
-					{
-						ImGui::CloseCurrentPopup();
-						Score prev = context.score;
-						context.score.timeSignatures.erase(eventEdit.editId);
-						context.pushHistory("Remove time signature", prev, context.score);
-					}
-				}
-			}
-			else if (eventEdit.type == EventType::HiSpeed)
-			{
-				if (context.score.hiSpeedChanges.find(eventEdit.editId) ==
-				    context.score.hiSpeedChanges.end())
-				{
-					ImGui::CloseCurrentPopup();
-					ImGui::EndPopup();
-					return;
-				}
-
-				UI::beginPropertyColumns();
-				UI::addFloatProperty(getString("hi_speed_speed"), eventEdit.editHiSpeed, "%g");
-				HiSpeedChange& hiSpeed = context.score.hiSpeedChanges[eventEdit.editId];
-				if (ImGui::IsItemDeactivatedAfterEdit())
-				{
-					Score prev = context.score;
-					hiSpeed.speed = eventEdit.editHiSpeed;
-
-					context.pushHistory("Change hi-speed", prev, context.score);
-				}
-				UI::endPropertyColumns();
-
-				ImGui::Separator();
-				if (ImGui::Button(getString("remove"), ImVec2(-1, UI::btnSmall.y + 2)))
-				{
-					ImGui::CloseCurrentPopup();
-					Score prev = context.score;
-					context.score.hiSpeedChanges.erase(eventEdit.editId);
-					context.pushHistory("Remove hi-speed change", prev, context.score);
-				}
-			}
-			else if (eventEdit.type == EventType::Waypoint)
-			{
-				if (eventEdit.editId >= context.score.waypoints.size())
-				{
-					ImGui::CloseCurrentPopup();
-					ImGui::EndPopup();
-					return;
-				}
-
-				UI::beginPropertyColumns();
-				UI::addStringProperty(getString("waypoint_name"), eventEdit.editName);
-				Waypoint& waypoint = context.score.waypoints[eventEdit.editId];
-				if (ImGui::IsItemDeactivatedAfterEdit())
-				{
-					Score prev = context.score;
-					waypoint.name = eventEdit.editName;
-
-					context.pushHistory("Change waypoint", prev, context.score);
-				}
-				UI::endPropertyColumns();
-
-				ImGui::Separator();
-				if (ImGui::Button(getString("remove"), ImVec2(-1, UI::btnSmall.y + 2)))
-				{
-					ImGui::CloseCurrentPopup();
-					Score prev = context.score;
-					context.score.waypoints.erase(context.score.waypoints.begin() +
-					                              eventEdit.editId);
-					context.pushHistory("Remove waypint", prev, context.score);
-				}
-			}
-			else if (eventEdit.type == EventType::Custom) // Handle our new event type
-			{
-				if (context.score.notes.find(eventEdit.editId) == context.score.notes.end() ||
-					context.score.notes.at(eventEdit.editId).getType() != NoteType::Event)
-				{
-					ImGui::CloseCurrentPopup();
-					ImGui::EndPopup();
-					return;
-				}
-
-				UI::beginPropertyColumns();
-				UI::addStringProperty(getString("event_name"), eventEdit.editName); // TODO: Localize "event_name"
-				if (ImGui::IsItemDeactivatedAfterEdit())
-				{
-					Score prev = context.score;
-					context.score.notes.at(eventEdit.editId).eventName = eventEdit.editName;
-					context.pushHistory("Edit Event Name", prev, context.score); // TODO: Localize "Edit Event Name"
-				}
-				UI::endPropertyColumns();
-				// No "Remove" button here as it's handled by context menu, but could be added.
-			}
-			ImGui::EndPopup();
-		}
-	}
+	// The eventEditor function was here. It has been removed.
 
 	bool ScoreEditorTimeline::isMouseInHoldPath(const Note& n1, const Note& n2, EaseType ease,
 	                                            float x, float y)
