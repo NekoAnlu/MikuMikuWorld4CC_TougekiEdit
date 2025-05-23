@@ -5,11 +5,14 @@ namespace MikuMikuWorld
 {
 	enum class NoteType : uint8_t
 	{
-		Tap,
+		Slide, // Renamed from Tap
 		Hold,
 		HoldMid,
 		HoldEnd,
-		Damage,
+		Danmaku,
+		Bell,
+		Ten,
+		Event,
 	};
 
 	enum class FlickType : uint8_t

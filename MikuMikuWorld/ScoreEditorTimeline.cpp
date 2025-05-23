@@ -542,6 +542,32 @@ namespace MikuMikuWorld
 		    Color::abgrToInt(std::clamp((int)(config.laneOpacity * 255), 0, 255), 0x1c, 0x1a,
 		                     0x0f));
 
+		// Calculate Event Track X-coordinates
+		// This is an approximation. A more robust way would be to calculate max X of all side elements.
+		float dpiScale = ImGui::GetMainViewport()->DpiScale;
+		float estimatedEndOfSideControls = getTimelineEndX(context.score) + (180 * dpiScale) + (80 * dpiScale); // Approx (HS_X_OFFSET + HS_TEXT_WIDTH)
+		float eventTrackStartX = estimatedEndOfSideControls + EVENT_TRACK_X_OFFSET_FROM_HS;
+		float eventTrackEndX = eventTrackStartX + EVENT_TRACK_WIDTH;
+
+		// Draw Event Track Background (if it's within the visible window horizontally)
+		if (eventTrackEndX > position.x && eventTrackStartX < position.x + size.x) {
+			drawList->AddRectFilled(
+				ImVec2(std::max(position.x, eventTrackStartX), position.y),
+				ImVec2(std::min(position.x + size.x, eventTrackEndX), position.y + size.y),
+				EVENT_TRACK_BG_COLOR
+			);
+			// Draw Event Track Separator Line
+			if (eventTrackStartX > position.x && eventTrackStartX < position.x + size.x)
+			{
+				drawList->AddLine(
+					ImVec2(eventTrackStartX, position.y),
+					ImVec2(eventTrackStartX, position.y + size.y),
+					EVENT_TRACK_SEPARATOR_COLOR,
+					1.0f
+				);
+			}
+		}
+
 		if (config.drawWaveform)
 			drawWaveform(context);
 
@@ -943,6 +969,14 @@ namespace MikuMikuWorld
 
 	void ScoreEditorTimeline::updateNotes(ScoreContext& context, EditArgs& edit, Renderer* renderer)
 	{
+		// Calculate Event Track X-coordinates (needed again for drawing markers)
+		float dpiScale = ImGui::GetMainViewport()->DpiScale;
+		// Approximation for where side controls (like HiSpeed) might end.
+		// Max X offset for HiSpeed is ~180 (for non-active layer) + some text width (e.g. 80)
+		float estimatedEndOfSideControls = getTimelineEndX(context.score) + (180 * dpiScale) + (80 * dpiScale); 
+		float eventTrackStartX = estimatedEndOfSideControls + EVENT_TRACK_X_OFFSET_FROM_HS;
+		float eventTrackMarkerStartX = eventTrackStartX + EVENT_MARKER_TEXT_X_OFFSET; // Start X for the marker bar itself
+
 		// directxmath dies
 		if (size.y < 10 || size.x < 10)
 			return;
@@ -1064,8 +1098,90 @@ namespace MikuMikuWorld
 
 			drawOutline(data, context.showAllLayers ? -1 : context.selectedLayer);
 		}
-
 		drawSteps.clear();
+
+		// Draw Event Markers
+		for (const auto& [id, note] : context.score.notes)
+		{
+			if (note.getType() == NoteType::Event)
+			{
+				const Layer& currentNoteLayer = context.score.layers.at(note.layer);
+				if (currentNoteLayer.hidden) {
+					continue; // Skip if the layer itself is hidden
+				}
+				if (!context.showAllLayers && note.layer != context.selectedLayer) {
+					continue; // Skip if not showing all layers and this isn't the selected layer
+				}
+				// If we reach here, the event note is visible based on layer settings.
+
+				float eventY = getNoteYPosFromTick(note.tick);
+				// Basic vertical clipping for event markers
+				if (eventY < position.y - EVENT_MARKER_HEIGHT || eventY > position.y + size.y + EVENT_MARKER_HEIGHT) continue;
+
+				// Ensure marker is within the visible part of the event track band
+				if (eventTrackMarkerStartX < position.x + size.x && eventTrackMarkerStartX + EVENT_MARKER_WIDTH > position.x)
+				{
+					ImVec2 markerTop(eventTrackMarkerStartX, eventY - EVENT_MARKER_HEIGHT / 2.0f);
+					ImVec2 markerBottom(eventTrackMarkerStartX + EVENT_MARKER_WIDTH, eventY + EVENT_MARKER_HEIGHT / 2.0f);
+					
+					ImU32 markerColor = note.critical ? EVENT_MARKER_COLOR_CRITICAL : EVENT_MARKER_COLOR_NORMAL;
+					drawList->AddRectFilled(markerTop, markerBottom, markerColor);
+
+					ImVec2 textPos(markerBottom.x + EVENT_MARKER_TEXT_X_OFFSET, eventY - (ImGui::GetTextLineHeight() / 2.0f));
+					// Basic horizontal clipping for text
+					if (textPos.x < eventTrackStartX + EVENT_TRACK_WIDTH - ImGui::CalcTextSize(note.eventName.c_str()).x - EVENT_MARKER_TEXT_X_OFFSET) // Ensure text doesn't overflow track width
+					{
+						drawList->AddText(textPos, EVENT_TEXT_COLOR, note.eventName.c_str());
+					}
+
+					// Interaction for Event Notes
+					char btn_id[64];
+					sprintf(btn_id, "event_marker_%d", id);
+					ImGui::SetCursorScreenPos(markerTop); // Cover the marker bar and text area roughly
+					float interactionWidth = (textPos.x + ImGui::CalcTextSize(note.eventName.c_str()).x) - markerTop.x;
+					if (interactionWidth < 50.0f) interactionWidth = 50.0f; // Minimum interaction width
+
+					if (ImGui::InvisibleButton(btn_id, ImVec2(interactionWidth, EVENT_MARKER_HEIGHT)))
+					{
+						if (!io.KeyCtrl && !io.KeyAlt) {
+							context.selectedNotes.clear();
+							context.selectedHiSpeedChanges.clear();
+						}
+						if (context.selectedNotes.count(id)) {
+							context.selectedNotes.erase(id);
+						} else {
+							context.selectedNotes.insert(id);
+						}
+						currentSelectedEventId = id; // Track for context menu or other single-item interactions
+						// Potentially open properties window or similar immediate action here if desired
+					}
+
+					// Context Menu for Event Notes
+					if (ImGui::BeginPopupContextItem(btn_id))
+					{
+						currentSelectedEventId = id; // Ensure this is set for the popup actions
+						if (ImGui::MenuItem(getString("edit_event"))) // TODO: Add "edit_event" to localization
+						{
+							eventEdit.type = EventType::Custom; // Assuming EventType::Custom or similar for generic events
+							eventEdit.editId = currentSelectedEventId;
+							const Note& eventNoteToEdit = context.score.notes.at(currentSelectedEventId);
+							eventEdit.editName = eventNoteToEdit.eventName;
+							// Other eventEdit fields like bpm, timeSignature are not relevant here.
+							ImGui::OpenPopup("edit_event"); // Using existing popup name
+						}
+						if (ImGui::MenuItem(getString("delete_event"))) // TODO: Add "delete_event" to localization
+						{
+							Score prev = context.score;
+							context.score.notes.erase(currentSelectedEventId);
+							if(context.selectedNotes.count(currentSelectedEventId))
+								context.selectedNotes.erase(currentSelectedEventId);
+							context.pushHistory("Delete Event", prev, context.score); // TODO: Add "Delete Event" to localization
+						}
+						ImGui::EndPopup();
+					}
+				}
+			}
+		}
 	}
 
 	void ScoreEditorTimeline::previewPaste(ScoreContext& context, Renderer* renderer)
@@ -2425,13 +2541,28 @@ namespace MikuMikuWorld
 		return eventControl(getTimelineStartX(score), pos, waypointColor, name.c_str(), true);
 	}
 
+	// Assuming EventType enum and eventTypes array are defined somewhere accessible,
+	// e.g. globally in this CPP or in a shared header.
+	// For this example, I'll assume EventType::Custom is added to such an enum.
+	// And "custom_event" is added to the eventTypes string array.
+	// enum class EventType { None, Bpm, TimeSignature, HiSpeed, Waypoint, Custom };
+	// const char* eventTypes[] = { "none", "bpm", "time_signature", "hi_speed", "waypoint", "custom_event" };
+
 	void ScoreEditorTimeline::eventEditor(ScoreContext& context)
 	{
 		ImGui::SetNextWindowSize(ImVec2(250, -1), ImGuiCond_Always);
 		if (ImGui::BeginPopup("edit_event"))
 		{
 			std::string editLabel{ "edit_" };
-			editLabel.append(eventTypes[(int)eventEdit.type]);
+			// Ensure EventType::Custom (or whatever new type) is handled by eventTypes or provide a default
+			if (eventEdit.type < EventType::EventTypeMax) { // Assuming EventTypeMax exists in the enum
+				editLabel.append(eventTypes[(int)eventEdit.type]);
+			} else if (eventEdit.type == EventType::Custom) { // Explicitly handle new event type
+				editLabel.append(getString("custom_event")); // TODO: Localize "custom_event"
+			} else {
+				editLabel.append("unknown_event_type");
+			}
+
 			ImGui::Text(getString(editLabel));
 			ImGui::Separator();
 
@@ -2570,6 +2701,27 @@ namespace MikuMikuWorld
 					                              eventEdit.editId);
 					context.pushHistory("Remove waypint", prev, context.score);
 				}
+			}
+			else if (eventEdit.type == EventType::Custom) // Handle our new event type
+			{
+				if (context.score.notes.find(eventEdit.editId) == context.score.notes.end() ||
+					context.score.notes.at(eventEdit.editId).getType() != NoteType::Event)
+				{
+					ImGui::CloseCurrentPopup();
+					ImGui::EndPopup();
+					return;
+				}
+
+				UI::beginPropertyColumns();
+				UI::addStringProperty(getString("event_name"), eventEdit.editName); // TODO: Localize "event_name"
+				if (ImGui::IsItemDeactivatedAfterEdit())
+				{
+					Score prev = context.score;
+					context.score.notes.at(eventEdit.editId).eventName = eventEdit.editName;
+					context.pushHistory("Edit Event Name", prev, context.score); // TODO: Localize "Edit Event Name"
+				}
+				UI::endPropertyColumns();
+				// No "Remove" button here as it's handled by context menu, but could be added.
 			}
 			ImGui::EndPopup();
 		}

@@ -26,9 +26,13 @@ namespace MikuMikuWorld
 		&config.input.timelineHold,          &config.input.timelineHoldMid,
 		&config.input.timelineFlick,         &config.input.timelineCritical,
 		&config.input.timelineFriction,      &config.input.timelineGuide,
-		&config.input.timelineDamage,        &config.input.timelineBpm,
+		&config.input.timelineDamage,        &config.input.timelineBpm, // Damage is removed, Event will go here
 		&config.input.timelineTimeSignature, &config.input.timelineHiSpeed,
+		&config.input.timelineDamage, // Placeholder for Event binding, reusing Damage
 	};
+	// Need to update TimelineMode enum and timelineModes array string simultaneously
+	// Assuming TimelineMode::InsertEvent is added before TimelineModeMax
+	// And "event" is added to timelineModes array in ScoreEditorTimeline.cpp or relevant header
 
 	constexpr const char* toolbarFlickNames[] = { "none", "default", "left", "right" };
 
@@ -239,9 +243,10 @@ namespace MikuMikuWorld
 			if (ImGui::IsAnyPressed(config.input.lerpHiSpeeds))
 				context.lerpHiSpeeds(timeline.getDivision());
 
-			for (int i = 0; i < (int)TimelineMode::TimelineModeMax; ++i)
-				if (ImGui::IsAnyPressed(*timelineModeBindings[i]))
+			for (int i = 0; i < (int)TimelineMode::TimelineModeMax; ++i) { // Ensure TimelineModeMax reflects new Event mode
+				if (timelineModeBindings[i] && ImGui::IsAnyPressed(*timelineModeBindings[i])) // Add null check for safety
 					timeline.changeMode((TimelineMode)i, edit);
+			}
 		}
 
 		timeline.laneWidth = config.timelineWidth;
@@ -373,6 +378,26 @@ namespace MikuMikuWorld
 		context.waveformL.clear();
 		context.waveformR.clear();
 		context.clearSelection();
+
+		// Ensure a default "Events" layer exists for new scores
+		bool eventsLayerExists = false;
+		for (const auto& layer : context.score.layers)
+		{
+			if (layer.name == "Events")
+			{
+				eventsLayerExists = true;
+				break;
+			}
+		}
+		if (!eventsLayerExists)
+		{
+			context.score.layers.push_back({ "Events" });
+		}
+		// Ensure the selected layer is valid, default to 0 if not.
+		if (context.selectedLayer >= context.score.layers.size()) {
+			context.selectedLayer = 0;
+		}
+
 
 		// New score; nothing to save
 		context.upToDate = true;
@@ -901,24 +926,44 @@ namespace MikuMikuWorld
 
 		UI::toolbarSeparator();
 
-		for (int i = 0; i < arrayLength(timelineModes); ++i)
+		// Assuming timelineModes array (in ScoreEditorTimeline.cpp or header) is updated with "event"
+		// And TimelineMode enum has InsertEvent
+		for (int i = 0; i < (int)TimelineMode::TimelineModeMax; ++i)
 		{
-			std::string img{ IO::concat("timeline", timelineModes[i], "_") };
-			if (i == (int)TimelineMode::InsertFlick)
+			// Temporary: Use a placeholder for Event mode icon name if timelineModes[i] for event is not set up for icons
+			std::string modeName = "";
+			if (i < arrayLength(timelineModes)) modeName = timelineModes[i]; // Use existing names
+			else if ((TimelineMode)i == TimelineMode::InsertEvent) modeName = "event"; // Conceptual name for InsertEvent
+
+			if (modeName.empty()) continue; // Should not happen if TimelineModeMax is correct
+
+			std::string img{ IO::concat("timeline", modeName, "_") };
+			if ((TimelineMode)i == TimelineMode::InsertFlick) // Cast i to TimelineMode for comparison
 				img.append("_").append(toolbarFlickNames[(int)edit.flickType]);
-			else if (i == (int)TimelineMode::InsertLongMid)
+			else if ((TimelineMode)i == TimelineMode::InsertLongMid)
 				img.append("_").append(toolbarStepNames[(int)edit.stepType]);
-			else if (i == (int)TimelineMode::InsertGuide)
+			else if ((TimelineMode)i == TimelineMode::InsertGuide)
 			{
 				img.append("_").append(guideColors[(int)edit.colorType]);
 				img.append("_").append(
 				    std::string(fadeTypes[(int)edit.fadeType]).substr(5).c_str());
 			}
+			else if ((TimelineMode)i == TimelineMode::InsertEvent) {
+				// Use a placeholder icon for Event, e.g., an existing one like "tap" or a specific "event" icon if available
+				img = "timelineevent_"; // Or "timelinetap_" as placeholder
+			}
 
-			if (UI::toolbarImageButton(img.c_str(), getString(timelineModes[i]),
+
+			if (timelineModeBindings[i] && UI::toolbarImageButton(img.c_str(), getString(modeName.c_str()), // getString might need "event" key
 			                           ToShortcutString(*timelineModeBindings[i]), true,
 			                           (int)timeline.getMode() == i))
 				timeline.changeMode((TimelineMode)i, edit);
+			else if (!timelineModeBindings[i] && (TimelineMode)i == TimelineMode::InsertEvent) { // Fallback for unbound Event mode button
+				if (UI::toolbarImageButton(img.c_str(), getString(modeName.c_str()),
+											"---", true, // No shortcut displayed
+											(int)timeline.getMode() == i))
+					timeline.changeMode((TimelineMode)i, edit);
+			}
 		}
 
 		ImGui::PopStyleColor(3);

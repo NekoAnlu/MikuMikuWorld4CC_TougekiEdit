@@ -18,14 +18,14 @@ namespace MikuMikuWorld
 	constexpr const char* SE_TICK = "tick";
 	constexpr const char* SE_FRICTION = "friction";
 	constexpr const char* SE_CONNECT = "connect";
-	constexpr const char* SE_CRITICAL_TAP = "critical_tap";
+	constexpr const char* SE_CRITICAL_SLIDE = "critical_slide"; // Renamed from SE_CRITICAL_TAP
 	constexpr const char* SE_CRITICAL_FLICK = "critical_flick";
 	constexpr const char* SE_CRITICAL_TICK = "critical_tick";
 	constexpr const char* SE_CRITICAL_FRICTION = "critical_friction";
 	constexpr const char* SE_CRITICAL_CONNECT = "critical_connect";
 
 	constexpr const char* SE_NAMES[] = { SE_PERFECT,         SE_FLICK,         SE_TICK,
-		                                 SE_FRICTION,        SE_CONNECT,       SE_CRITICAL_TAP,
+		                                 SE_FRICTION,        SE_CONNECT,       SE_CRITICAL_SLIDE, // Renamed from SE_CRITICAL_TAP
 		                                 SE_CRITICAL_FLICK,  SE_CRITICAL_TICK, SE_CRITICAL_FRICTION,
 		                                 SE_CRITICAL_CONNECT };
 
@@ -70,6 +70,8 @@ namespace MikuMikuWorld
 		bool critical{ false };
 		bool friction{ false };
 		FlickType flick{ FlickType::None };
+		float ExtraSpeed{ 1.0f };
+		std::string eventName{ "" };
 
 		int layer{ 0 };
 

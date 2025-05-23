@@ -11,6 +11,20 @@
 namespace MikuMikuWorld
 {
 	void scrollTimeline(ScoreContext& context, const int tick);
+
+	// Event Track Constants
+	constexpr float EVENT_TRACK_WIDTH = 180.0f;
+	constexpr float EVENT_TRACK_X_OFFSET_FROM_HS = 10.0f; // X distance from where HiSpeed controls end
+	constexpr ImU32 EVENT_TRACK_BG_COLOR = 0xAA181818;    // Dark semi-transparent gray
+	constexpr ImU32 EVENT_TRACK_SEPARATOR_COLOR = 0xFF444444; // Darker gray for separator line
+	constexpr float EVENT_MARKER_HEIGHT = 14.0f;
+	constexpr float EVENT_MARKER_WIDTH = 5.0f; // Width of the small vertical bar for the event
+	constexpr ImU32 EVENT_MARKER_COLOR_NORMAL = 0xFFE0E0E0; // Light gray/white
+	constexpr ImU32 EVENT_MARKER_COLOR_CRITICAL = 0xFF87CEFA; // LightSkyBlue for critical events
+	constexpr ImU32 EVENT_TEXT_COLOR = 0xFFFFFFFF;          // White for event name
+	constexpr float EVENT_MARKER_TEXT_X_OFFSET = 4.0f; // Padding between marker bar and text
+	constexpr float EVENT_ITEM_PADDING_Y = 1.0f; // Padding above/below each event item
+
 	enum class StepDrawType
 	{
 		NormalStep,
@@ -234,9 +248,12 @@ namespace MikuMikuWorld
 		bool drawHoldStepOutlines = true;
 		Background background;
 
+		// Forward declaration
+		enum class EventType; 
+
 		struct EventEditParams
 		{
-			EventType type = EventType::None;
+			EventType type = EventType::None; 
 			id_t editId = static_cast<id_t>(-1);
 
 			float editBpm = 120.0f;
@@ -247,6 +264,8 @@ namespace MikuMikuWorld
 
 			std::string editName = "";
 		} eventEdit{};
+		
+		id_t currentSelectedEventId = -1; // Used to track which event's context menu might be open or being interacted with
 
 		int snapTickFromPos(double posY) const;
 		int positionToTick(double pos) const;
