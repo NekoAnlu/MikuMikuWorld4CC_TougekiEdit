@@ -1095,6 +1095,12 @@ namespace MikuMikuWorld
 			hiSpeedControl(context, hsc.tick + hoverTick, hsc.speed, -1);
 	}
 
+	/// <summary>
+	/// 切换当前所选要插入的按键时调用
+	/// 对应option窗口的设置
+	/// </summary>
+	/// <param name="score"></param>
+	/// <param name="edit"></param>
 	void ScoreEditorTimeline::updateInputNotes(const Score& score, EditArgs& edit)
 	{
 		int lane = laneFromCenterPosition(score, hoverLane, edit.noteWidth);
@@ -1108,6 +1114,11 @@ namespace MikuMikuWorld
 		    currentMode == TimelineMode::InsertFlick ? edit.flickType : FlickType::None;
 		inputNotes.tap.critical = currentMode == TimelineMode::MakeCritical;
 		inputNotes.tap.friction = currentMode == TimelineMode::MakeFriction;
+		//mod 直接在切换timelineMode的时候附加上值 如果是flick就允许改宽度
+		if (currentMode != TimelineMode::InsertFlick)
+			inputNotes.tap.resizeAble = false;	
+		else
+			inputNotes.tap.resizeAble = true;
 
 		inputNotes.holdStep.lane = lane;
 		inputNotes.holdStep.width = width;
@@ -1557,6 +1568,10 @@ namespace MikuMikuWorld
 				    [&context, diff, minLane, maxLane, maxNoteWidth](int id)
 				    {
 					    Note& n = context.score.notes.at(id);
+
+						//--------Mod 如果按键被设为不能resize就直接false
+						if (!n.resizeAble) return true;
+
 					    int newLane = n.lane + diff;
 					    int newWidth = n.width - diff;
 					    return (newLane < minLane || newLane + newWidth - 1 > maxLane ||
@@ -1734,6 +1749,10 @@ namespace MikuMikuWorld
 				    [&context, diff, maxLane](int id)
 				    {
 					    Note& n = context.score.notes.at(id);
+
+						//--------Mod 如果按键被设为不能resize就直接true（有取反）
+						if (!n.resizeAble) return true;
+
 					    int newWidth = n.width + diff;
 					    return (newWidth < MIN_NOTE_WIDTH || n.lane + newWidth - 1 > maxLane);
 				    });

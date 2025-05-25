@@ -18,10 +18,31 @@ namespace MikuMikuWorld
 		Default,
 		Left,
 		Right,
-		FlickTypeCount
+		FlickTypeCount,
 	};
 
 	constexpr const char* flickTypes[]{ "none", "default", "left", "right" };
+
+	// mod 弹幕射出方向
+	enum class DamageDirection : uint8_t
+	{
+		None,
+		Left,
+		Right,
+		Middle
+	};
+
+	constexpr const char* damageDirections[]{ "none", "left", "right", "middle" };
+
+
+	// mod 弹幕属性 WIP
+	enum class DamageType : uint8_t
+	{
+		Circle, Bullet
+	};
+
+	constexpr const char* damageTypes[]{ "circle", "bullet" };
+
 
 	enum class HoldStepType : uint8_t
 	{

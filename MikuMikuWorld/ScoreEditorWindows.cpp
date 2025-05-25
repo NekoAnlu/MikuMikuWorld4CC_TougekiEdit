@@ -109,10 +109,11 @@ namespace MikuMikuWorld
 			UI::addReadOnlyProperty(getString("hispeeds"), context.scoreStats.getHiSpeeds());
 			UI::addReadOnlyProperty(getString("taps"), context.scoreStats.getTaps());
 			UI::addReadOnlyProperty(getString("flicks"), context.scoreStats.getFlicks());
-			UI::addReadOnlyProperty(getString("holds"), context.scoreStats.getHolds());
-			UI::addReadOnlyProperty(getString("steps"), context.scoreStats.getSteps());
+			//mod
+			//UI::addReadOnlyProperty(getString("holds"), context.scoreStats.getHolds());
+			//UI::addReadOnlyProperty(getString("steps"), context.scoreStats.getSteps());
 			UI::addReadOnlyProperty(getString("guides"), context.scoreStats.getGuides());
-			UI::addReadOnlyProperty(getString("traces"), context.scoreStats.getTraces());
+			//UI::addReadOnlyProperty(getString("traces"), context.scoreStats.getTraces());
 			UI::addReadOnlyProperty(getString("total"), context.scoreStats.getTotal());
 			UI::addReadOnlyProperty(getString("combo"), context.scoreStats.getCombo());
 			UI::endPropertyColumns();
@@ -242,12 +243,35 @@ namespace MikuMikuWorld
 				}
 			}
 
+			//拿的是选中按键的第一个按键
 			Note& note = context.score.notes.at(*context.selectedNotes.begin());
+
 			if (ImGui::CollapsingHeader(
-			        IO::concat(ICON_FA_COG, getString("note_properties_note"), " ").c_str(),
-			        ImGuiTreeNodeFlags_DefaultOpen))
+				IO::concat(ICON_FA_COG, getString("note_properties_note"), " ").c_str(),
+				ImGuiTreeNodeFlags_DefaultOpen))
 			{
 				UI::beginPropertyColumns();
+
+				//Mod 加ExtraSpeed属性
+				if (UI::addFloatProperty(getString("extraspeed"), note.extraSpeed, "%.2f"))
+				{
+					for (auto& id : context.selectedNotes)
+					{
+						context.score.notes.at(id).extraSpeed = note.extraSpeed;
+					}
+					edited = true;
+				}
+
+				//Mod 加EventName属性
+				/*if (UI::addFloatProperty(getString("extraspeed"), note.extraSpeed, "%.2f"))
+				{
+					for (auto& id : context.selectedNotes)
+					{
+						context.score.notes.at(id).extraSpeed = note.extraSpeed;
+					}
+					edited = true;
+				}*/
+
 
 				if (UI::addFloatProperty(getString("lane"), note.lane, "%.2f"))
 				{
@@ -258,31 +282,41 @@ namespace MikuMikuWorld
 					edited = true;
 				}
 
-				if (UI::addFloatProperty(getString("width"), note.width, "%.2f"))
+				// mod 修改宽度时 如果选中的第一个按键或内部有任意按键不能修改宽度的时候就不能改
+				if (note.resizeAble) 
 				{
-					for (auto& id : context.selectedNotes)
+					if (UI::addFloatProperty(getString("width"), note.width, "%.2f"))
 					{
-						auto& localNote = context.score.notes.at(id);
-						if (localNote.isHold())
+						for (auto& id : context.selectedNotes)
 						{
-							auto& hold = context.score.holdNotes.at(
-							    localNote.parentID == -1 ? id : localNote.parentID);
-							if (!((localNote.getType() == NoteType::Hold &&
-							       hold.startType == HoldNoteType::Normal) ||
-							      (localNote.getType() == NoteType::HoldMid &&
-							       hold.steps.at(findHoldStep(hold, localNote.ID)).type ==
-							           HoldStepType::Normal) ||
-							      (localNote.getType() == NoteType::HoldEnd &&
-							       hold.endType == HoldNoteType::Normal)))
-							{
-								localNote.width = std::max(0.0f, note.width);
-								continue;
-							}
-						}
+							auto& localNote = context.score.notes.at(id);
 
-						localNote.width = std::max(0.5f, note.width);
+							//Mod 如果当前选中的主note不可调整大小，则不进行任何修改
+							if (!localNote.resizeAble) {
+								edited = false;
+								break;
+							}
+
+							if (localNote.isHold())
+							{
+								auto& hold = context.score.holdNotes.at(
+									localNote.parentID == -1 ? id : localNote.parentID);
+								if (!((localNote.getType() == NoteType::Hold &&
+									hold.startType == HoldNoteType::Normal) ||
+									(localNote.getType() == NoteType::HoldMid &&
+										hold.steps.at(findHoldStep(hold, localNote.ID)).type ==
+										HoldStepType::Normal) ||
+									(localNote.getType() == NoteType::HoldEnd &&
+										hold.endType == HoldNoteType::Normal)))
+								{
+									localNote.width = std::max(0.0f, note.width);
+									continue;
+								}
+							}
+							localNote.width = std::max(0.5f, note.width);
+						}
+						edited = true;
 					}
-					edited = true;
 				}
 			}
 
@@ -310,7 +344,8 @@ namespace MikuMikuWorld
 					{
 						if (note.getType() == NoteType::Hold || note.getType() == NoteType::HoldEnd)
 						{
-							if (UI::addCheckboxProperty(getString("trace"), note.friction))
+							// mod 不需要trace
+							/*if (UI::addCheckboxProperty(getString("trace"), note.friction))
 							{
 								for (auto& id : context.selectedNotes)
 								{
@@ -321,7 +356,7 @@ namespace MikuMikuWorld
 									}
 								}
 								edited = true;
-							}
+							}*/
 						}
 						if (UI::addCheckboxProperty(getString("critical"), note.critical))
 						{
@@ -359,7 +394,8 @@ namespace MikuMikuWorld
 			}
 			else
 			{
-				if (UI::addCheckboxProperty(getString("trace"), note.friction))
+				// mod 不需要trace
+				/*if (UI::addCheckboxProperty(getString("trace"), note.friction))
 				{
 					for (auto& id : context.selectedNotes)
 					{
@@ -370,27 +406,92 @@ namespace MikuMikuWorld
 						}
 					}
 					edited = true;
-				}
-				if (UI::addCheckboxProperty(getString("critical"), note.critical))
+				}*/
+
+				// mod 让Flick不能为Critical
+				if (note.flick == FlickType::None)
 				{
-					for (auto& id : context.selectedNotes)
+					if (UI::addCheckboxProperty(getString("critical"), note.critical))
 					{
-						context.score.notes.at(id).critical = note.critical;
-					}
-					edited = true;
-				}
-				if (UI::addFlickSelectPropertyWithNone(getString("flick"), note.flick, flickTypes,
-				                                       arrayLength(flickTypes)))
-				{
-					for (auto& id : context.selectedNotes)
-					{
-						auto& n = context.score.notes.at(id);
-						if (n.canFlick())
+						for (auto& id : context.selectedNotes)
 						{
-							n.flick = note.flick;
+							// 如果选中按键里有Flick 则不会修改他的Critical属性
+							auto& n = context.score.notes.at(id);
+							if (n.flick != FlickType::None)
+							{
+								edited = false;
+								continue;
+							}
+							n.critical = note.critical;
 						}
+						edited = true;
 					}
-					edited = true;
+				}
+
+				// mod 保证damage不会有Flick
+				if (note.getType() != NoteType::Damage)
+				{
+					if (UI::addFlickSelectPropertyWithNone(getString("flick"), note.flick, flickTypes,
+						arrayLength(flickTypes)))
+					{
+						for (auto& id : context.selectedNotes)
+						{
+							auto& n = context.score.notes.at(id);
+
+							if (n.canFlick())
+							{
+								//mod 如果修改的值为变为Tap
+								if (note.flick == FlickType::None)
+								{
+									n.resizeAble = false;
+									n.width = 2;
+								}
+								else
+								{
+									n.resizeAble = true;
+								}
+								n.flick = note.flick;
+							}
+						}
+						edited = true;
+					}
+				}
+
+
+				//Mod Damage(Danmaku)类型下拉菜单
+				if (note.getType() == NoteType::Damage)
+				{
+					if (UI::addSelectProperty(getString("damagedirection"), note.damageDirection, damageDirections,
+						arrayLength(damageDirections)))
+					{
+						for (auto& id : context.selectedNotes)
+						{
+							auto& n = context.score.notes.at(id);
+							if (n.getType() != NoteType::Damage)
+							{
+								continue;
+							}
+							n.damageDirection = note.damageDirection;
+
+						}
+						edited = true;
+					}
+
+					if (UI::addSelectProperty(getString("damagetype"), note.damageType, damageTypes,
+						arrayLength(damageTypes)))
+					{
+						for (auto& id : context.selectedNotes)
+						{
+							auto& n = context.score.notes.at(id);
+							if (n.getType() != NoteType::Damage)
+							{
+								continue;
+							}
+							n.damageDirection = note.damageDirection;
+
+						}
+						edited = true;
+					}
 				}
 			}
 
@@ -572,8 +673,9 @@ namespace MikuMikuWorld
 			break;
 
 		default:
-			UI::addIntProperty(getString("note_width"), edit.noteWidth, MIN_NOTE_WIDTH,
-			                   MAX_NOTE_WIDTH);
+			// 直接不允许统一设置width
+			//UI::addIntProperty(getString("note_width"), edit.noteWidth, MIN_NOTE_WIDTH,
+			//                   MAX_NOTE_WIDTH);
 			UI::addSelectProperty(getString("step_type"), edit.stepType, stepTypes,
 			                      arrayLength(stepTypes));
 			UI::addSelectProperty(getString("ease_type"), edit.easeType, easeTypes,

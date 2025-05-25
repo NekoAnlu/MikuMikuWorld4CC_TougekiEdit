@@ -7,7 +7,7 @@ namespace MikuMikuWorld
 	class ScoreStats
 	{
 	  private:
-		int hispeeds, taps, flicks, holds, guides, steps, traces, total, combo;
+		int hispeeds, taps, flicks, holds, guides, steps, traces, total, combo, damages;
 
 		void resetCounts();
 		void resetCombo();
@@ -28,5 +28,7 @@ namespace MikuMikuWorld
 		int getTraces() const { return traces; }
 		int getTotal() const { return total; }
 		int getCombo() const { return combo; }
+		// mod µ¯Ä»Êý
+		int getDamages() const { return damages; }
 	};
 }

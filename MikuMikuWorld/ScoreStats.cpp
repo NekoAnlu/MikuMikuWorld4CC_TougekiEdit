@@ -13,7 +13,7 @@ namespace MikuMikuWorld
 		resetCombo();
 	}
 
-	void ScoreStats::resetCounts() { hispeeds = 1; taps = flicks = holds = steps = guides = traces = total = 0; }
+	void ScoreStats::resetCounts() { hispeeds = 1; taps = flicks = holds = steps = guides = traces = total = damages = 0; }
 
 	void ScoreStats::resetCombo() { combo = 0; }
 
@@ -51,6 +51,10 @@ namespace MikuMikuWorld
 		traces = std::count_if(score.notes.begin(), score.notes.end(),
 		                       [](const auto& n) { return n.second.friction; });
 
+		// Mod Ìí¼Óµ¯Ä»ÏÔÊ¾
+		damages = std::count_if(score.notes.begin(), score.notes.end(),
+								[](const auto& n) { return n.second.getType() == NoteType::Damage; });
+
 		total = score.notes.size();
 		calculateCombo(score);
 	}
@@ -58,7 +62,7 @@ namespace MikuMikuWorld
 	void ScoreStats::calculateCombo(const Score& score)
 	{
 		resetCombo();
-		combo = score.notes.size();
+		combo = score.notes.size() - damages;
 
 		constexpr int halfBeat = TICKS_PER_BEAT / 2;
 		for (const auto& [id, hold] : score.holdNotes)
@@ -98,5 +102,7 @@ namespace MikuMikuWorld
 
 			combo += (endTick - eighthTick) / halfBeat;
 		}
+	
+	
 	}
 }

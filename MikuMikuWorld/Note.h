@@ -8,10 +8,10 @@
 namespace MikuMikuWorld
 {
 	constexpr int MIN_NOTE_WIDTH = 1;
-	constexpr int MAX_NOTE_WIDTH = 12;
+	constexpr int MAX_NOTE_WIDTH = 20;
 	constexpr int MIN_LANE = 0;
-	constexpr int MAX_LANE = 11;
-	constexpr int NUM_LANES = 12;
+	constexpr int MAX_LANE = 24;
+	constexpr int NUM_LANES = 20;
 
 	constexpr const char* SE_PERFECT = "perfect";
 	constexpr const char* SE_FLICK = "flick";
@@ -35,8 +35,9 @@ namespace MikuMikuWorld
 
 	enum class ZIndex : int32_t
 	{
-		HoldLine,
+		// mod 修改guide在最下
 		Guide,
+		HoldLine,
 		HoldTick,
 		Note,
 		FrictionTick,
@@ -58,6 +59,9 @@ namespace MikuMikuWorld
 	{
 	  private:
 		NoteType type;
+		//-------------Mod 添加属性
+		// 是否可以被调整大小
+		//bool resizeAble;
 
 	  public:
 		static int getNextID();
@@ -69,6 +73,16 @@ namespace MikuMikuWorld
 		float width;
 		bool critical{ false };
 		bool friction{ false };
+		//-------------Mod 添加属性
+		// 额外速度
+		float extraSpeed;
+		// 是否可以被调整宽度
+		bool resizeAble{ false };
+		// Damage类型
+		DamageType damageType { DamageType::Circle };
+		DamageDirection damageDirection { DamageDirection::None };
+		//-------------Mod End
+
 		FlickType flick{ FlickType::None };
 
 		int layer{ 0 };
@@ -87,6 +101,8 @@ namespace MikuMikuWorld
 		bool hasEase() const;
 		bool canFlick() const;
 		bool canTrace() const;
+
+
 	};
 
 	struct HoldStep

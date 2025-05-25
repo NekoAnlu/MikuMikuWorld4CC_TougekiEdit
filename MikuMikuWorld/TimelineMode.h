@@ -7,22 +7,43 @@ namespace MikuMikuWorld
 	{
 		Select,
 		InsertTap,
-		InsertLong,
-		InsertLongMid,
-		InsertFlick,
 		MakeCritical,
-		MakeFriction,
+		InsertFlick,
 		InsertGuide,
+		InsertLongMid,
 		InsertDamage,
 		InsertBPM,
 		InsertTimeSign,
 		InsertHiSpeed,
-		TimelineModeMax
+		TimelineModeMax,
+		// 以下为被删除按键
+		InsertLong,
+		MakeFriction,
 	};
 
-	constexpr const char* timelineModes[]{ "select", "tap",      "hold",           "hold_step",
+	//enum class TimelineMode : uint8_t
+	//{
+	//	Select,
+	//	InsertTap,
+	//	InsertLong,
+	//	InsertLongMid,
+	//	InsertFlick,
+	//	MakeCritical,
+	//	MakeFriction,
+	//	InsertGuide,
+	//	InsertDamage,
+	//	InsertBPM,
+	//	InsertTimeSign,
+	//	InsertHiSpeed,
+	//	TimelineModeMax
+	//};
+
+	/*constexpr const char* timelineModes[]{ "select", "tap",      "hold",           "hold_step",
 		                                   "flick",  "critical", "trace",          "guide",
-		                                   "damage", "bpm",      "time_signature", "hi_speed" };
+		                                   "damage", "bpm",      "time_signature", "hi_speed" };*/
+	//mod 删除不需要的按键
+	constexpr const char* timelineModes[]{ "select", "tap", "critical","flick","guide","hold_step",
+										   "damage", "bpm","time_signature", "hi_speed" };
 
 	constexpr int divisions[]{ 4, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192 };
 

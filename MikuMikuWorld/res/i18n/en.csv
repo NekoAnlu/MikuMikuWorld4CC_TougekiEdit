@@ -1,10 +1,10 @@
-# code: en
+# code: en,
 # key, value
-
+,
 language_name,English
 translator,N/A
-
-# menu bar
+,
+# menu bar,
 file,File
 new,New
 open,Open
@@ -28,8 +28,8 @@ debug,Debug
 create_auto_save,Create Auto Save
 help,Help
 about,About
-
-# dialogs
+,
+# dialogs,
 file_not_found,File not found
 file_not_found_msg1,The file
 file_not_found_msg2,was not found
@@ -88,8 +88,8 @@ video,Video
 notes_se,Notes SE
 show_tick_in_properties, Show Tick in Note Properties Window
 translation_by,Translation by %s
-
-# score editor
+,
+# score editor,
 options,Options
 chart_properties,Chart Properties
 note_properties,Note Properties
@@ -215,8 +215,8 @@ note_properties_not_selected,No notes or hi-speeds are selected
 note_properties_many_hold_notes,More than one hold note is selected
 translated_by,Translated by: %s
 zoom_tooltip,Ctrl-click to edit value
-
-# preset manager
+,
+# preset manager,
 presets,Presets
 no_presets,No presets available
 name,Name
@@ -224,8 +224,8 @@ description,Description
 create_preset,Create Preset
 search,Search...
 confirm,Confirm
-
-# layer manager
+,
+# layer manager,
 layers,Layers
 name,Name
 create_layer,Create Layer
@@ -238,14 +238,14 @@ layer_merge,Merge Layer
 layer_delete,Delete Layer
 layer_hide,Hide Layer
 layer_show,Show Layer
-
-# waypoint manager
+,
+# waypoint manager,
 waypoints,Waypoints
 create_waypoint,Create Waypoint
 edit_waypoint,Edit Waypoint
 waypoint_name,Name
-
-# commands
+,
+# commands,
 action,Action
 keys,Keys
 add,Add
@@ -270,3 +270,11 @@ timeline_time_signature,Timeline - Insert Time Signature
 timeline_hi_speed,Timeline - Insert Hi-Speed Change
 zoom_in,Zoom In
 zoom_out,Zoom Out
+,
+# mod,
+extraspeed,Extra Speed
+damagedirection,Danmaku Direction
+middle,Middle
+damagetype,Danmaku Type
+circle,Clrcle
+bullet,Bullet

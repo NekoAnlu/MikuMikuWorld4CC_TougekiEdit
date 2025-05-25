@@ -18,19 +18,19 @@ namespace MikuMikuWorld
 
 	Note::Note(NoteType _type)
 	    : type{ _type }, parentID{ static_cast<id_t>(-1) }, tick{ 0 }, lane{ 0 }, width{ 3 },
-	      critical{ false }, friction{ false }
+		critical{ false }, friction{ false }, resizeAble{ true }, extraSpeed{ 1 }
 	{
 	}
 
 	Note::Note(NoteType _type, int _tick, float _lane, float _width)
 	    : type{ _type }, parentID{ static_cast<id_t>(-1) }, tick{ _tick }, lane{ _lane },
-	      width{ _width }, critical{ false }, friction{ false }
+	      width{ _width }, critical{ false }, friction{ false }, resizeAble{ true }, extraSpeed{ 1 }
 	{
 	}
 
 	Note::Note()
-	    : type{ NoteType::Tap }, parentID{ static_cast<id_t>(-1) }, tick{ 0 }, lane{ 0 },
-	      width{ 3 }, critical{ false }, friction{ false }
+		: type{ NoteType::Tap }, parentID{ static_cast<id_t>(-1) }, tick{ 0 }, lane{ 0 },
+		width{ 3 }, critical{ false }, friction{ false }, resizeAble{ true }, extraSpeed{ 1 }
 	{
 	}
 
@@ -41,11 +41,16 @@ namespace MikuMikuWorld
 
 	bool Note::hasEase() const { return type == NoteType::Hold || type == NoteType::HoldMid; }
 
-	bool Note::canFlick() const { return type == NoteType::Tap || type == NoteType::HoldEnd; }
+	bool Note::canFlick() const { return type == NoteType::Tap; }
+
 	bool Note::canTrace() const
 	{
-		return type == NoteType::Hold || type == NoteType::HoldEnd || type == NoteType::Tap;
+		//mod ȫɾ
 	}
+
+	//-----------Mod
+
+	//---------Mod End
 
 	void cycleFlick(Note& note)
 	{

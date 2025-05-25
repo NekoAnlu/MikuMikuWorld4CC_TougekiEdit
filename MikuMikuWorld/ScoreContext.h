@@ -14,7 +14,7 @@ namespace MikuMikuWorld
 {
 	struct EditArgs
 	{
-		int noteWidth{ 3 };
+		int noteWidth{ 2 };
 		FlickType flickType{ FlickType::Default };
 		HoldStepType stepType{ HoldStepType::Normal };
 		EaseType easeType{ EaseType::Linear };
