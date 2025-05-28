@@ -408,8 +408,8 @@ namespace MikuMikuWorld
 					edited = true;
 				}*/
 
-				// mod 让Flick不能为Critical
-				if (note.flick == FlickType::None)
+				// mod 让Flick不能为Critical danmage不能为Critical
+				if (note.flick == FlickType::None && note.getType() != NoteType::Damage)
 				{
 					if (UI::addCheckboxProperty(getString("critical"), note.critical))
 					{
@@ -417,7 +417,7 @@ namespace MikuMikuWorld
 						{
 							// 如果选中按键里有Flick 则不会修改他的Critical属性
 							auto& n = context.score.notes.at(id);
-							if (n.flick != FlickType::None)
+							if (n.flick != FlickType::None|| note.getType() == NoteType::Damage)
 							{
 								edited = false;
 								continue;
@@ -444,11 +444,14 @@ namespace MikuMikuWorld
 								if (note.flick == FlickType::None)
 								{
 									n.resizeAble = false;
-									n.width = 2;
+									n.width = 1;
 								}
 								else
 								{
+									//保证ten变为flick后不会导致变成critical flick
+									n.critical = false;
 									n.resizeAble = true;
+									n.width = 3;
 								}
 								n.flick = note.flick;
 							}
@@ -487,12 +490,24 @@ namespace MikuMikuWorld
 							{
 								continue;
 							}
-							n.damageDirection = note.damageDirection;
+							//切换为bullet后可以改宽度
+							if (note.damageType == DamageType::Circle)
+							{
+								n.resizeAble = false;
+								n.width = 1;
+							}
+							else
+							{
+								n.resizeAble = true;
+								n.width = 2;
+							}
+							n.damageType = note.damageType;
 
 						}
 						edited = true;
 					}
 				}
+				// mod damage end
 			}
 
 			UI::endPropertyColumns();

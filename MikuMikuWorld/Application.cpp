@@ -17,7 +17,7 @@ namespace MikuMikuWorld
 	std::string Application::pendingLoadScoreFile;
 	WindowState Application::windowState;
 
-	NoteTextures noteTextures{ -1, -1, -1, -1, -1 };
+	NoteTextures noteTextures{ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 
 	Application::Application() : initialized{ false }
 	{
@@ -343,12 +343,36 @@ namespace MikuMikuWorld
 		ResourceManager::loadTexture(texturesDir + "timeline_bpm.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_time_signature.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_hi_speed.png");
+
+		//mod 自定义按键材质
+		ResourceManager::loadTexture(texturesDir + "bell.png");
+		ResourceManager::loadTexture(texturesDir + "danmaku.png");
+		ResourceManager::loadTexture(texturesDir + "danmaku_center.png");
+		ResourceManager::loadTexture(texturesDir + "danmaku_left.png");
+		ResourceManager::loadTexture(texturesDir + "danmaku_right.png");
+		ResourceManager::loadTexture(texturesDir + "flick_left.png");
+		ResourceManager::loadTexture(texturesDir + "flick_right.png");
+		ResourceManager::loadTexture(texturesDir + "flick_up.png");
+		ResourceManager::loadTexture(texturesDir + "ten.png");
+
+
 		// Cache note textures indices
 		noteTextures.notes = ResourceManager::getTexture(NOTES_TEX);
 		noteTextures.holdPath = ResourceManager::getTexture(HOLD_PATH_TEX);
 		noteTextures.touchLine = ResourceManager::getTexture(TOUCH_LINE_TEX);
 		noteTextures.ccNotes = ResourceManager::getTexture(CC_NOTES_TEX);
 		noteTextures.guideColors = ResourceManager::getTexture(GUIDE_COLORS_TEX);
+
+		//mod 自定义按键材质
+		noteTextures.bell = ResourceManager::getTexture(BELL_TEX);
+		noteTextures.ten = ResourceManager::getTexture(TEN_TEX);
+		noteTextures.danmaku = ResourceManager::getTexture(DAMAKU_TEX);
+		noteTextures.danmaku_center = ResourceManager::getTexture(DAMAKU_CENTER_TEX);
+		noteTextures.danmaku_left = ResourceManager::getTexture(DAMAKU_LEFT_TEX);
+		noteTextures.danmaku_right = ResourceManager::getTexture(DAMAKU_RIGHT_TEX);
+		noteTextures.flick_left = ResourceManager::getTexture(FLICK_LEFT_TEX);
+		noteTextures.flick_right = ResourceManager::getTexture(FLICK_RIGHT_TEX);
+		noteTextures.flick_up = ResourceManager::getTexture(FLICK_UP_TEX);
 
 		Localization::loadLanguages(appDir + "res\\i18n");
 	}

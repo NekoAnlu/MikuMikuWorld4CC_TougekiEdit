@@ -61,6 +61,7 @@ namespace MikuMikuWorld
 
 	float ScoreEditorTimeline::laneToPosition(float lane) const
 	{
+		//lane++;
 		return laneOffset + (lane * laneWidth);
 	}
 
@@ -775,8 +776,22 @@ namespace MikuMikuWorld
 			float x = position.x;
 			float y = position.y - tickToPosition(note.tick) + visualOffset;
 
-			ImVec2 p1{ x + laneToPosition(note.lane) - 3, y - (notesHeight * 0.5f) };
-			ImVec2 p2{ x + laneToPosition(note.lane + note.width) + 3, y + (notesHeight * 0.5f) };
+			float lanePos = note.lane;
+
+			//mod 对于bell 和 ten按键 绘制选择框时向左移动一行
+			if (note.getType() == NoteType::Tap && !note.isFlick())
+			{
+				lanePos -= note.width / 2.0f;
+			}
+			else if (note.getType() == NoteType::Damage && note.damageType == DamageType::Circle)
+			{
+				lanePos -= note.width / 2.0f;
+			}
+
+			//mod end
+
+			ImVec2 p1{ x + laneToPosition(lanePos) - 3, y - (notesHeight * 0.5f) };
+			ImVec2 p2{ x + laneToPosition(lanePos + note.width) + 3, y + (notesHeight * 0.5f) };
 
 			drawList->AddRectFilled(p1, p2, 0x20f4f4f4, 2.0f, ImDrawFlags_RoundCornersAll);
 			drawList->AddRect(p1, p2, 0xcccccccc, 2.0f, ImDrawFlags_RoundCornersAll, 2.0f);
@@ -1106,9 +1121,9 @@ namespace MikuMikuWorld
 		int lane = laneFromCenterPosition(score, hoverLane, edit.noteWidth);
 		int width = edit.noteWidth;
 		int tick = hoverTick;
-
-		inputNotes.tap.lane = lane;
-		inputNotes.tap.width = width;
+		//mod 直接限制死普通tap宽度为1
+		inputNotes.tap.lane = lane + 1;
+		inputNotes.tap.width = 1;
 		inputNotes.tap.tick = tick;
 		inputNotes.tap.flick =
 		    currentMode == TimelineMode::InsertFlick ? edit.flickType : FlickType::None;
@@ -1116,10 +1131,15 @@ namespace MikuMikuWorld
 		inputNotes.tap.friction = currentMode == TimelineMode::MakeFriction;
 		//mod 直接在切换timelineMode的时候附加上值 如果是flick就允许改宽度
 		if (currentMode != TimelineMode::InsertFlick)
-			inputNotes.tap.resizeAble = false;	
+		{
+			inputNotes.tap.resizeAble = false;
+		}
 		else
+		{
+			inputNotes.tap.lane = lane;
 			inputNotes.tap.resizeAble = true;
-
+			inputNotes.tap.width = 3;
+		}
 		inputNotes.holdStep.lane = lane;
 		inputNotes.holdStep.width = width;
 		inputNotes.holdStep.tick = tick;
@@ -1137,8 +1157,13 @@ namespace MikuMikuWorld
 			inputNotes.holdStart.tick = tick;
 		}
 
-		inputNotes.damage.lane = lane;
-		inputNotes.damage.width = width;
+		if (inputNotes.damage.damageType == DamageType::Circle)
+			inputNotes.damage.resizeAble = false;
+		else
+			inputNotes.damage.resizeAble = true;
+
+		inputNotes.damage.lane = lane + 1;
+		inputNotes.damage.width = 1;
 		inputNotes.damage.tick = tick;
 	}
 
@@ -1511,14 +1536,28 @@ namespace MikuMikuWorld
 		const float maxLane = MAX_LANE + context.score.metadata.laneExtension;
 		const float maxNoteWidth = MAX_NOTE_WIDTH + context.score.metadata.laneExtension * 2;
 
+		// mod 保证tap框拖拽正确
+		float lanePos = note.lane;
+		if (note.getType() == NoteType::Tap && !note.isFlick())
+		{
+			lanePos -= note.width / 2.0f;
+		}
+		//圆形弹幕同理
+		else if (note.getType() == NoteType::Damage && note.damageType == DamageType::Circle)
+		{
+			lanePos -= note.width / 2.0f;
+		}
+
 		const float btnPosY =
-		    position.y - tickToPosition(note.tick) + visualOffset - (notesHeight * 0.5f);
-		float btnPosX = laneToPosition(note.lane) + position.x - 2.0f;
+			position.y - tickToPosition(note.tick) + visualOffset - (notesHeight * 0.5f);
+		float btnPosX = laneToPosition(lanePos) + position.x - 2.0f;
 
 		ImVec2 pos{ btnPosX, btnPosY };
-		ImVec2 noteSz{ laneToPosition(note.lane + note.width) + position.x + 2.0f - btnPosX,
+		ImVec2 noteSz{ laneToPosition(lanePos + note.width) + position.x + 2.0f - btnPosX,
 			           notesHeight };
 		ImVec2 sz{ noteControlWidth, notesHeight };
+
+		//mod end
 
 		const ImGuiIO& io = ImGui::GetIO();
 		if (ImGui::IsMouseHoveringRect(pos, pos + noteSz, false) && mouseInTimeline)
@@ -2155,6 +2194,8 @@ namespace MikuMikuWorld
 		auto fill = data.getFillColor();
 		auto outline = data.getOutlineColor();
 
+
+
 		if (selectedLayer != -1 && data.layer != -1 && selectedLayer != data.layer)
 		{
 			int fillAlpha = (fill & 0xFF000000) >> 24;
@@ -2174,11 +2215,29 @@ namespace MikuMikuWorld
 		if (noteTextures.notes == -1)
 			return;
 
-		const Texture& tex = ResourceManager::textures[noteTextures.notes];
-		const int sprIndex = getFlickArrowSpriteIndex(note);
+		//mod 同drawnote
+		int texName = -1;
+		int sprIndex = -1;
+
+		if (note.flick == FlickType::Right)
+		{
+			texName = noteTextures.flick_right;
+			sprIndex = 0;
+		}
+		else if (note.flick == FlickType::Left)
+		{
+			texName = noteTextures.flick_left;
+			sprIndex = 0;
+		}
+		else
+		{
+			texName = noteTextures.notes;
+			sprIndex = getFlickArrowSpriteIndex(note);
+		}
+
+		const Texture& tex = ResourceManager::textures[texName];
 		if (!isArrayIndexInBounds(sprIndex, tex.sprites))
 			return;
-
 		const Sprite& arrowS = tex.sprites[sprIndex];
 
 		Vector2 pos{ 0, getNoteYPosFromTick(note.tick + offsetTick) };
@@ -2194,12 +2253,12 @@ namespace MikuMikuWorld
 
 		float sx1 = arrowS.getX();
 		float sx2 = arrowS.getX() + arrowS.getWidth();
-		if (note.flick == FlickType::Right)
-		{
-			// Flip arrow to point to the right
-			sx1 = arrowS.getX() + arrowS.getWidth();
-			sx2 = arrowS.getX();
-		}
+		//if (note.flick == FlickType::Right)
+		//{
+		//	// Flip arrow to point to the right
+		//	sx1 = arrowS.getX() + arrowS.getWidth();
+		//	sx2 = arrowS.getX();
+		//}
 
 		renderer->drawSprite(pos, 0.0f, size, AnchorType::MiddleCenter, tex, sx1, sx2,
 		                     arrowS.getY(), arrowS.getY() + arrowS.getHeight(), tint, 2);
@@ -2211,13 +2270,48 @@ namespace MikuMikuWorld
 	{
 		if (noteTextures.notes == -1)
 			return;
+		
+		int texName = -1;
+		int sprIndex = -1;
 
-		const Texture& tex = ResourceManager::textures[noteTextures.notes];
-		const int sprIndex = getNoteSpriteIndex(note);
+		//mod 根据按键类型加载自定义贴图 修改自getNoteSpriteIndex（）
+		if (!note.critical&& note.flick == FlickType::None)
+		{
+			texName = noteTextures.bell;
+			sprIndex = 0;
+		}
+		else if (note.isFlick())
+		{
+			texName = noteTextures.notes;
+			sprIndex = getNoteSpriteIndex(note);
+		}
+		else if (note.critical && note.getType() != NoteType::HoldMid)
+		{
+			texName = noteTextures.ten;
+			sprIndex = 0;
+		}
+		else if (note.getType() == NoteType::Damage)
+		{
+			texName = noteTextures.danmaku;
+			sprIndex = 0;
+		}
+		else
+		{
+			texName = noteTextures.notes;
+			sprIndex = getNoteSpriteIndex(note);
+		}
+
+		//const Texture& tex = ResourceManager::textures[noteTextures.notes];
+		//const int sprIndex = getNoteSpriteIndex(note);
+		//if (!isArrayIndexInBounds(sprIndex, tex.sprites))
+		//	return;
+		//const Sprite& s = tex.sprites[sprIndex];
+
+		const Texture& tex = ResourceManager::textures[texName];
 		if (!isArrayIndexInBounds(sprIndex, tex.sprites))
 			return;
-
 		const Sprite& s = tex.sprites[sprIndex];
+
 
 		Vector2 pos{ laneToPosition(note.lane + offsetLane),
 			         getNoteYPosFromTick(note.tick + offsetTick) };
@@ -2234,21 +2328,37 @@ namespace MikuMikuWorld
 
 		const int z = (selectedLayer ? (int)ZIndex::zCount : 0) + (int)ZIndex::Note;
 
-		// left slice
-		renderer->drawSprite(pos, 0.0f, sliceSz, anchor, tex, left, left + noteSliceWidth, s.getY(),
-		                     s.getY() + s.getHeight(), tint, z);
-		pos.x += sliceSz.x;
+		// MOD 绘制的时候只绘制单独的中间
+		if (note.getType() == NoteType::Tap && !note.isFlick())
+		{
+			Vector2 pos{ laneToPosition(note.lane), getNoteYPosFromTick(note.tick + offsetTick) };
+			renderer->drawSprite(pos, 0.0f, Vector2(40,40), AnchorType::MiddleCenter, tex, 0 ,tint, z);
+		}
+		// 普通圆形弹幕同上
+		else if (note.getType() == NoteType::Damage && note.damageType == DamageType::Circle)
+		{
+			Vector2 pos{ laneToPosition(note.lane), getNoteYPosFromTick(note.tick + offsetTick) };
+			renderer->drawSprite(pos, 0.0f, Vector2(40, 40), AnchorType::MiddleCenter, tex, 0, tint, z);
+		}
+		else
+		{
+			// left slice
+			renderer->drawSprite(pos, 0.0f, sliceSz, anchor, tex, left, left + noteSliceWidth, s.getY(),
+				s.getY() + s.getHeight(), tint, z);
+			pos.x += sliceSz.x;
 
-		// Middle
-		renderer->drawSprite(pos, 0.0f, midSz, anchor, tex, left + noteSliceWidth,
-		                     left + noteSliceWidth + 1, s.getY(), s.getY() + s.getHeight(), tint,
-		                     z);
+			// Middle
+			renderer->drawSprite(pos, 0.0f, midSz, anchor, tex, left + noteSliceWidth,
+				left + noteSliceWidth + 1, s.getY(), s.getY() + s.getHeight(), tint,
+				z);
 
-		pos.x += midLen;
+			pos.x += midLen;
 
-		// right slice
-		renderer->drawSprite(pos, 0.0f, sliceSz, anchor, tex, right - noteSliceWidth, right,
-		                     s.getY(), s.getY() + s.getHeight(), tint, z);
+			// right slice
+			renderer->drawSprite(pos, 0.0f, sliceSz, anchor, tex, right - noteSliceWidth, right,
+				s.getY(), s.getY() + s.getHeight(), tint, z);
+		}
+
 
 		if (note.friction)
 		{
@@ -2280,20 +2390,55 @@ namespace MikuMikuWorld
 		if (noteTextures.notes == -1)
 			return;
 
-		const Texture& tex = ResourceManager::textures[noteTextures.ccNotes];
-		const int sprIndex = getCcNoteSpriteIndex(note);
-		if (sprIndex < 0 || sprIndex >= tex.sprites.size())
-			return;
+		int texName = -1;
+		int sprIndex = -1;
 
+		//mod 根据按键类型加载自定义贴图 修改自getNoteSpriteIndex（）
+		if (note.damageType == DamageType::Circle)
+		{
+			switch (note.damageDirection)
+			{
+				case DamageDirection::Left:
+				{
+					texName = noteTextures.danmaku_left;
+					break;
+				}
+				case DamageDirection::Right:
+				{
+					texName = noteTextures.danmaku_right;
+					break;
+				}
+				case DamageDirection::Middle:
+				{
+					texName = noteTextures.danmaku_center;
+					break;
+				}
+				default:
+				{
+					texName = noteTextures.danmaku;
+					break;
+				}
+			}
+			sprIndex = 0;
+		}
+		else
+		{
+			texName = noteTextures.ccNotes;
+			sprIndex = 0;
+		}
+
+		const Texture& tex = ResourceManager::textures[texName];
+		if (!isArrayIndexInBounds(sprIndex, tex.sprites))
+			return;
 		const Sprite& s = tex.sprites[sprIndex];
 
 		Vector2 pos{ laneToPosition(note.lane + offsetLane),
-			         getNoteYPosFromTick(note.tick + offsetTick) };
+			 getNoteYPosFromTick(note.tick + offsetTick) };
 		const Vector2 sliceSz(notesSliceSize, notesHeight);
 		const AnchorType anchor = AnchorType::MiddleLeft;
 
 		const float midLen =
-		    std::max(0.0f, (laneWidth * note.width) - (sliceSz.x * 2) + noteOffsetX + 5);
+			std::max(0.0f, (laneWidth * note.width) - (sliceSz.x * 2) + noteOffsetX + 5);
 		const Vector2 midSz{ midLen, notesHeight };
 
 		pos.x -= noteOffsetX;
@@ -2302,19 +2447,27 @@ namespace MikuMikuWorld
 
 		const int z = (selectedLayer ? (int)ZIndex::zCount : 0) + 1;
 
-		// left slice
-		renderer->drawSprite(pos, 0.0f, sliceSz, anchor, tex, left, left + noteSliceWidth, s.getY(),
-		                     s.getY() + s.getHeight(), tint, z);
-		pos.x += sliceSz.x;
+		if (note.damageType == DamageType::Circle)
+		{
+			Vector2 pos{ laneToPosition(note.lane), getNoteYPosFromTick(note.tick + offsetTick) };
+			renderer->drawSprite(pos, 0.0f, Vector2(40, 40), AnchorType::MiddleCenter, tex, 0, tint, z);
+		}
+		else
+		{
+			// left slice
+			renderer->drawSprite(pos, 0.0f, sliceSz, anchor, tex, left, left + noteSliceWidth, s.getY(),
+				s.getY() + s.getHeight(), tint, z);
+			pos.x += sliceSz.x;
 
-		// middle
-		renderer->drawSprite(pos, 0.0f, midSz, anchor, tex, left + noteSliceWidth,
-		                     right - noteSliceWidth, s.getY(), s.getY() + s.getHeight(), tint, z);
-		pos.x += midLen;
+			// middle
+			renderer->drawSprite(pos, 0.0f, midSz, anchor, tex, left + noteSliceWidth,
+				right - noteSliceWidth, s.getY(), s.getY() + s.getHeight(), tint, z);
+			pos.x += midLen;
 
-		// right slice
-		renderer->drawSprite(pos, 0.0f, sliceSz, anchor, tex, right - noteSliceWidth, right,
-		                     s.getY(), s.getY() + s.getHeight(), tint, z);
+			// right slice
+			renderer->drawSprite(pos, 0.0f, sliceSz, anchor, tex, right - noteSliceWidth, right,
+				s.getY(), s.getY() + s.getHeight(), tint, z);
+		}
 
 		if (note.friction)
 		{

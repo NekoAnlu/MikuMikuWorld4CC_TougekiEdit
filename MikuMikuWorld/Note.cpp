@@ -30,7 +30,7 @@ namespace MikuMikuWorld
 
 	Note::Note()
 		: type{ NoteType::Tap }, parentID{ static_cast<id_t>(-1) }, tick{ 0 }, lane{ 0 },
-		width{ 3 }, critical{ false }, friction{ false }, resizeAble{ true }, extraSpeed{ 1 }
+		width{ 1 }, critical{ false }, friction{ false }, resizeAble{ true }, extraSpeed{ 1 }
 	{
 	}
 
@@ -46,6 +46,7 @@ namespace MikuMikuWorld
 	bool Note::canTrace() const
 	{
 		//mod ȫɾ
+		return false;
 	}
 
 	//-----------Mod

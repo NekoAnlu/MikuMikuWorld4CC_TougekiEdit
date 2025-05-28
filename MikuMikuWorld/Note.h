@@ -9,7 +9,7 @@ namespace MikuMikuWorld
 {
 	constexpr int MIN_NOTE_WIDTH = 1;
 	constexpr int MAX_NOTE_WIDTH = 20;
-	constexpr int MIN_LANE = 0;
+	constexpr int MIN_LANE = -1;
 	constexpr int MAX_LANE = 24;
 	constexpr int NUM_LANES = 20;
 
@@ -51,6 +51,16 @@ namespace MikuMikuWorld
 		int touchLine;
 		int ccNotes;
 		int guideColors;
+		//mod
+		int bell;
+		int ten;
+		int danmaku;
+		int danmaku_center;
+		int danmaku_left;
+		int danmaku_right;
+		int flick_left;
+		int flick_right;
+		int flick_up;
 	};
 
 	extern NoteTextures noteTextures;
