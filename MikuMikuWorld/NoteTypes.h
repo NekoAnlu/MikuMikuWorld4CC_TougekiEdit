@@ -67,8 +67,7 @@ namespace MikuMikuWorld
 	constexpr const char* easeNames[]{ "linear", "in", "out", "inout", "outin" };
 
 	constexpr const char* easeTypes[]{ "linear", "ease_in", "ease_out", "ease_in_out",
-		                               "ease_out_in" };
-
+		                               "ease_out_in" };	
 	enum class HoldNoteType : uint8_t
 	{
 		Normal,
@@ -77,6 +76,16 @@ namespace MikuMikuWorld
 	};
 
 	constexpr const char* holdTypes[]{ "normal", "hidden", "guide" };
+	
+	//mod HoldÊÓÎªevent
+	enum class HoldEventType : uint8_t
+	{
+		Event_Warning,
+		Event_Laser,
+		Event_Colorset,
+	};
+
+	constexpr const char* holdEventTypes[]{ "event_warning", "event_laser", "event_colorset" };
 
 	enum class GuideColor : uint8_t
 	{

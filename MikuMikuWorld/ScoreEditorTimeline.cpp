@@ -547,7 +547,8 @@ namespace MikuMikuWorld
 			drawWaveform(context);
 
 		// Draw lanes
-		for (int l = 0; l <= NUM_LANES; ++l)
+		// mod 从minline开始画 画到MAX_LANE
+		for (int l = MIN_LANE; l <= MAX_LANE; ++l)
 		{
 			const int x = position.x + laneToPosition(l);
 			const bool boldLane = !(l & 1);
@@ -2275,7 +2276,12 @@ namespace MikuMikuWorld
 		int sprIndex = -1;
 
 		//mod 根据按键类型加载自定义贴图 修改自getNoteSpriteIndex（）
-		if (!note.critical&& note.flick == FlickType::None)
+		if (note.isHold())
+		{
+			texName = noteTextures.notes;
+			sprIndex = getNoteSpriteIndex(note);
+		}
+		else if (!note.critical&& note.flick == FlickType::None)
 		{
 			texName = noteTextures.bell;
 			sprIndex = 0;
@@ -2844,6 +2850,10 @@ namespace MikuMikuWorld
 			                                      holdEnd.ID,
 			                                      holdType,
 			                                      holdType,
+												  //mod 额外hold属性
+												  edit.holdEventType,
+												  edit.colorsetID,
+												  edit.highlight,
 			                                      edit.fadeType,
 			                                      edit.colorType };
 		context.pushHistory("Insert hold", prev, context.score);

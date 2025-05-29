@@ -13,7 +13,7 @@ clear,Clear
 save,Save
 save_as,Save As
 export_sus,Export SUS
-export_usc,Export USC
+export_usc,Export Tougeki
 exit,Exit
 edit,Edit
 undo,Undo
@@ -278,3 +278,9 @@ middle,Middle
 damagetype,Danmaku Type
 circle,Clrcle
 bullet,Bullet
+hold_event_type,Event Type
+event_warning,Warning
+event_laser,Laser
+event_colorset,Colorset
+colorset_index,Colorset Index
+colorset_highlight,Highlight

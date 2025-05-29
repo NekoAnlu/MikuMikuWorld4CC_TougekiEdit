@@ -78,6 +78,14 @@ namespace MikuMikuWorld
 		if (cyanvasVersion >= 4)
 			note.layer = reader->readUInt32();
 
+		//mod tap和damage的额外属性存储
+		if (cyanvasVersion >= 7)
+		{
+			note.extraSpeed = reader->readSingle();
+			note.damageType = (DamageType)reader->readUInt32();
+			note.damageDirection = (DamageDirection)reader->readUInt32();
+		}
+		
 		if (!note.hasEase())
 			note.flick = (FlickType)reader->readUInt32();
 
@@ -93,6 +101,10 @@ namespace MikuMikuWorld
 		writer->writeSingle(note.lane);
 		writer->writeSingle(note.width);
 		writer->writeInt32(note.layer);
+		//mod tap和damage的额外属性存储
+		writer->writeSingle(note.extraSpeed);
+		writer->writeInt32((int)note.damageType);
+		writer->writeInt32((int)note.damageDirection);
 
 		if (!note.hasEase())
 			writer->writeInt32((int)note.flick);
@@ -328,6 +340,14 @@ namespace MikuMikuWorld
 			{
 				hold.guideColor = start.critical ? GuideColor::Yellow : GuideColor::Green;
 			}
+			// mod +LN特殊类型 HoldEventType colorsetID highlight
+			if (cyanvasVersion >= 7)
+			{
+				hold.holdEventType = (HoldEventType)reader.readUInt32();
+				hold.colorsetID = reader.readUInt32();
+			    hold.highlight = (bool)reader.readUInt32();
+			}
+
 			score.notes[start.ID] = start;
 
 			int stepCount = reader.readUInt32();
@@ -414,7 +434,8 @@ namespace MikuMikuWorld
 		// version
 		writer.writeInt16(4);
 		// cyanvas version
-		writer.writeInt16(6);
+		//writer.writeInt16(6);
+		writer.writeInt16(7);
 
 		// offsets address in order: metadata -> events -> taps -> holds
 		// Cyanvas extension: -> damages -> layers -> waypoints
@@ -466,6 +487,11 @@ namespace MikuMikuWorld
 			writer.writeInt32((int)hold.start.ease);
 			writer.writeInt32((int)hold.fadeType);
 			writer.writeInt32((int)hold.guideColor);
+
+			// mod +LN特殊类型 HoldEventType colorsetID highlight
+			writer.writeInt32((int)hold.holdEventType);
+			writer.writeInt32((int)hold.colorsetID);
+			writer.writeInt32((int)hold.highlight);
 
 			// steps
 			int stepCount = hold.steps.size();

@@ -54,7 +54,7 @@ namespace MikuMikuWorld
 		std::string jacketFile;
 		float musicOffset;
 
-		int laneExtension = 0;
+		int laneExtension = 2;
 	};
 
 	struct Score

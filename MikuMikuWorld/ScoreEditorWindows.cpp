@@ -358,7 +358,8 @@ namespace MikuMikuWorld
 								edited = true;
 							}*/
 						}
-						if (UI::addCheckboxProperty(getString("critical"), note.critical))
+						//mod hold不需要critical
+						/*if (UI::addCheckboxProperty(getString("critical"), note.critical))
 						{
 							context.score.notes.at(hold.start.ID).critical = note.critical;
 							for (auto& step : hold.steps)
@@ -371,10 +372,10 @@ namespace MikuMikuWorld
 								context.score.notes.at(id).critical = note.critical;
 							}
 							edited = true;
-						}
+						}*/
 					}
-
-					if (note.getType() == NoteType::HoldEnd && !isGuide)
+					//mod hold不需要flick
+					/*if (note.getType() == NoteType::HoldEnd && !isGuide)
 					{
 						if (UI::addFlickSelectPropertyWithNone(getString("flick"), note.flick,
 						                                       flickTypes, arrayLength(flickTypes)))
@@ -389,7 +390,7 @@ namespace MikuMikuWorld
 								}
 							}
 						}
-					}
+					}*/
 				}
 			}
 			else
@@ -590,7 +591,8 @@ namespace MikuMikuWorld
 
 						if (hasStepType)
 						{
-							int stepIndex = findHoldStep(hold, stepTypeNote.ID);
+							//mod 删除holdmid type
+							/*int stepIndex = findHoldStep(hold, stepTypeNote.ID);
 							auto stepType = hold.steps.at(stepIndex).type;
 
 							if (UI::addSelectProperty(getString("step_type"), stepType, stepTypes,
@@ -605,7 +607,7 @@ namespace MikuMikuWorld
 										step.type = stepType;
 									}
 								}
-							}
+							}*/
 						}
 
 						if (isGuide)
@@ -618,7 +620,8 @@ namespace MikuMikuWorld
 						}
 						else
 						{
-							auto holdType =
+							//mod 不需要holdtype属性
+							/*auto holdType =
 							    note.getType() == NoteType::Hold ? hold.startType : hold.endType;
 							if (UI::addSelectProperty(getString("hold_type"), holdType, holdTypes,
 							                          2))
@@ -636,6 +639,47 @@ namespace MikuMikuWorld
 									}
 								}
 								edited = true;
+							}*/
+							//mod 添加修改holdevent属性
+							if (UI::addSelectProperty(getString("hold_event_type"), hold.holdEventType, holdEventTypes,
+								arrayLength(holdEventTypes)))
+							{
+								/*for (auto id : context.selectedNotes)
+								{
+									auto& note = context.score.notes.at(id);
+									if (note.getType() == NoteType::Hold)
+									{
+										hold.holdEventType = hold.holdEventType;
+									}
+									else
+									{
+										hold.holdEventType = hold.holdEventType;
+									}
+								}*/
+								edited = true;
+							}
+
+							// mod 当event为变色事件的时候添加indexUI
+							if (hold.holdEventType == HoldEventType::Event_Colorset)
+							{
+								//上下限记得改
+								if (UI::addIntProperty(getString("colorset_index"), hold.colorsetID, 0, 30))
+								{
+									/*for (auto& id : context.selectedNotes)
+									{
+										
+									}*/
+									edited = true;
+								}
+								//是否为highlight toggle
+								if (UI::addCheckboxProperty(getString("colorset_highlight"), hold.highlight))
+								{
+									/*for (auto& id : context.selectedNotes)
+									{
+
+									}*/
+									edited = true;
+								}
 							}
 						}
 					}

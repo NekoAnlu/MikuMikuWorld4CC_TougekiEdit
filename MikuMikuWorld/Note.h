@@ -7,11 +7,11 @@
 
 namespace MikuMikuWorld
 {
-	constexpr int MIN_NOTE_WIDTH = 1;
+	constexpr int MIN_NOTE_WIDTH = 0;
 	constexpr int MAX_NOTE_WIDTH = 20;
-	constexpr int MIN_LANE = -1;
-	constexpr int MAX_LANE = 24;
-	constexpr int NUM_LANES = 20;
+	constexpr int MIN_LANE = 0;
+	constexpr int MAX_LANE = 14;
+	constexpr int NUM_LANES = 14;
 
 	constexpr const char* SE_PERFECT = "perfect";
 	constexpr const char* SE_FLICK = "flick";
@@ -131,6 +131,12 @@ namespace MikuMikuWorld
 
 		HoldNoteType startType{};
 		HoldNoteType endType{};
+
+		// mod Holdµ±event∂ÓÕ‚ Ù–‘
+		HoldEventType holdEventType{};
+		int colorsetID;
+		bool highlight;
+		// mod end
 
 		FadeType fadeType{ FadeType::Out };
 		GuideColor guideColor{ GuideColor::Green };

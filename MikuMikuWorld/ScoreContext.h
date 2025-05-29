@@ -20,6 +20,9 @@ namespace MikuMikuWorld
 		EaseType easeType{ EaseType::Linear };
 		GuideColor colorType{ GuideColor::Green };
 		FadeType fadeType{ FadeType::Out };
+		HoldEventType holdEventType{ HoldEventType::Event_Colorset };
+		int colorsetID{ 1 };
+		bool highlight{ false };
 
 		float bpm{ 160.0f };
 		int timeSignatureNumerator{ 4 };

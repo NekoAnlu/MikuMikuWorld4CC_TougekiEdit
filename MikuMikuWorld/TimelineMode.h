@@ -9,6 +9,7 @@ namespace MikuMikuWorld
 		InsertTap,
 		MakeCritical,
 		InsertFlick,
+		InsertLong,
 		InsertGuide,
 		InsertLongMid,
 		InsertDamage,
@@ -17,7 +18,6 @@ namespace MikuMikuWorld
 		InsertHiSpeed,
 		TimelineModeMax,
 		// 以下为被删除按键
-		InsertLong,
 		MakeFriction,
 	};
 
@@ -42,7 +42,7 @@ namespace MikuMikuWorld
 		                                   "flick",  "critical", "trace",          "guide",
 		                                   "damage", "bpm",      "time_signature", "hi_speed" };*/
 	//mod 删除不需要的按键
-	constexpr const char* timelineModes[]{ "select", "tap", "critical","flick","guide","hold_step",
+	constexpr const char* timelineModes[]{ "select", "tap", "critical","flick", "hold", "guide","hold_step",
 										   "damage", "bpm","time_signature", "hi_speed" };
 
 	constexpr int divisions[]{ 4, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192 };

@@ -408,7 +408,6 @@ namespace MikuMikuWorld
 
 	SUS ScoreConverter::scoreToSus(const Score& score)
 	{
-		// mod ???
 		constexpr std::array<int, static_cast<int>(FlickType::FlickTypeCount)> flickToType{ 0, 1, 3, 4 };
 
 		int offset = score.metadata.laneExtension == 0 ? 2 : score.metadata.laneExtension;

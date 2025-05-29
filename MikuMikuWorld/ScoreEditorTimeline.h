@@ -260,7 +260,8 @@ namespace MikuMikuWorld
 		const inline float getTimelineStartX() const { return position.x + laneOffset; }
 		const inline float getTimelineEndX() const
 		{
-			return getTimelineStartX() + (laneWidth * 12);
+			//MOD 改为基于NUM_LANES获取TimelineEndX
+			return getTimelineStartX() + (laneWidth * NUM_LANES);
 		}
 		const inline float getTimelineStartX(const Score& score) const
 		{

@@ -51,7 +51,8 @@ namespace MikuMikuWorld
 		autoSavePath = Application::getAppDir() + "auto_save";
 		autoSaveTimer.reset();
 
-		std::thread fetchUpdateThread(
+		// mod 不自动更新
+		/*std::thread fetchUpdateThread(
 		    [this]
 		    {
 			    try
@@ -64,7 +65,7 @@ namespace MikuMikuWorld
 			    }
 		    });
 
-		fetchUpdateThread.detach();
+		fetchUpdateThread.detach();*/
 	}
 
 	void ScoreEditor::fetchUpdate()
@@ -183,6 +184,7 @@ namespace MikuMikuWorld
 			if (ImGui::IsAnyPressed(config.input.save))
 				trySave(context.workingData.filename);
 			if (ImGui::IsAnyPressed(config.input.saveAs))
+				//exportUsc();
 				saveAs();
 			if (ImGui::IsAnyPressed(config.input.exportSus))
 				exportSus();
@@ -480,6 +482,7 @@ namespace MikuMikuWorld
 	bool ScoreEditor::trySave(std::string filename)
 	{
 		if (filename.empty())
+			//return exportUsc();
 			return saveAs();
 		else
 			return save(filename);
@@ -491,10 +494,25 @@ namespace MikuMikuWorld
 	{
 		try
 		{
-			int laneExtension = context.score.metadata.laneExtension;
 			context.score.metadata = context.workingData.toScoreMetadata();
+
+			//old mmw save
+			int laneExtension = context.score.metadata.laneExtension;
 			context.score.metadata.laneExtension = laneExtension;
 			serializeScore(context.score, filename);
+
+			//mod usc save (暂时放弃)
+			//int oldLaneExtension = context.score.metadata.laneExtension;
+			//context.score.metadata.laneExtension = oldLaneExtension;
+			//json usc = ScoreConverter::scoreToUsc(context.score);
+			//std::wstring wFilename = IO::mbToWideStr(filename);
+			//IO::File uscfile(wFilename, L"w");
+			//uscfile.write(usc.dump(config.minifyUsc ? -1 : 4));
+			//uscfile.flush();
+			//uscfile.close();
+
+			//// 实时保存文件的路径
+			//updateRecentFilesList(filename);
 
 			UI::setWindowTitle(IO::File::getFilename(filename));
 			context.upToDate = true;
@@ -567,7 +585,7 @@ namespace MikuMikuWorld
 		}
 	}
 
-	void ScoreEditor::exportUsc()
+	bool ScoreEditor::exportUsc()
 	{
 		IO::FileDialog fileDialog{};
 		fileDialog.title = "Export Chart";
@@ -599,7 +617,12 @@ namespace MikuMikuWorld
 				    IO::formatString("An error occurred while exporting the score file\n%s",
 				                     err.what()),
 				    IO::MessageBoxButtons::Ok, IO::MessageBoxIcon::Error);
+				return false;
 			}
+			
+			// 实时保存文件的路径
+			updateRecentFilesList(fileDialog.outputFilename);
+			return true;
 		}
 	}
 
@@ -652,9 +675,12 @@ namespace MikuMikuWorld
 			if (ImGui::MenuItem(getString("save"), ToShortcutString(config.input.save)))
 				trySave(context.workingData.filename);
 
+			//mod 替换saveas为exportUsc()
 			if (ImGui::MenuItem(getString("save_as"), ToShortcutString(config.input.saveAs)))
+				//exportUsc();
 				saveAs();
 
+			//改名
 			if (ImGui::MenuItem(getString("export_usc"), ToShortcutString(config.input.exportUsc)))
 				exportUsc();
 
