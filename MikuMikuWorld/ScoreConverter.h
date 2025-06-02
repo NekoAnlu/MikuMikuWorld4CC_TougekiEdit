@@ -21,5 +21,9 @@ namespace MikuMikuWorld
 		static SUS scoreToSus(const Score& score);
 		static nlohmann::json scoreToUsc(const Score& score);
 		static Score uscToScore(const nlohmann::json& usc);
+
+		//mod tougeki json
+		static nlohmann::json scoreToTougeki(const Score& score);
+		static Score tougekiToScore(const nlohmann::json& usc);
 	};
 }

@@ -239,7 +239,7 @@ namespace MikuMikuWorld
 			if (ImGui::IsAnyPressed(config.input.splitHold))
 				context.splitHoldInSelection();
 			if (ImGui::IsAnyPressed(config.input.lerpHiSpeeds))
-				context.lerpHiSpeeds(timeline.getDivision());
+				context.lerpHiSpeeds(timeline.getDivision(), EaseType::Linear);
 
 			for (int i = 0; i < (int)TimelineMode::TimelineModeMax; ++i)
 				if (ImGui::IsAnyPressed(*timelineModeBindings[i]))
@@ -473,7 +473,9 @@ namespace MikuMikuWorld
 		IO::FileDialog fileDialog{};
 		fileDialog.parentWindowHandle = Application::windowState.windowHandle;
 		fileDialog.title = "Open Score File";
-		fileDialog.filters = { { "Score Files", "*.ccmmws;*.mmws;*.usc;*.sus" } };
+		//fileDialog.filters = { { "Score Files", "*.ccmmws;*.mmws;*.usc;*.sus" } };
+		//mod ÆÁ±ÎµôuscµÄ¶ÁÈ¡
+		fileDialog.filters = { { "Score Files", "*.ccmmws;*.mmws" } };
 
 		if (fileDialog.openFile() == IO::FileDialogResult::OK)
 			loadScore(fileDialog.outputFilename);
@@ -601,7 +603,9 @@ namespace MikuMikuWorld
 				context.score.metadata = context.workingData.toScoreMetadata();
 				context.score.metadata.laneExtension = oldLaneExtension;
 
-				json usc = ScoreConverter::scoreToUsc(context.score);
+				//json usc = ScoreConverter::scoreToUsc(context.score);
+				json usc = ScoreConverter::scoreToTougeki(context.score);
+
 
 				std::wstring wFilename = IO::mbToWideStr(fileDialog.outputFilename);
 				IO::File uscfile(wFilename, L"w");
