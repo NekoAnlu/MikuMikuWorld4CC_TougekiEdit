@@ -1205,6 +1205,7 @@ namespace MikuMikuWorld
 		std::vector<json> bpmObjects;
 		std::vector<json> railObjects;
 		std::vector<json> eventObjects;
+		std::vector<json> svObjects;
 		std::vector<json> objects;
 
 		// 处理meta
@@ -1223,14 +1224,14 @@ namespace MikuMikuWorld
 			bpmObjects.push_back(obj);
 		}
 
-		// 处理变速事件（直接压进entities块中）
+		// 处理变速事件
 		for (const auto& [_, hs] : score.hiSpeedChanges)
 		{
 			json obj;
 			obj["beat"] = hs.tick / (double)TICKS_PER_BEAT;
 			obj["extraspeed"] = hs.speed;
 			obj["datamodel"] = "event_sv";
-			objects.push_back(obj);
+			svObjects.push_back(obj);
 		}
 		
 		// 处理按键
@@ -1251,6 +1252,7 @@ namespace MikuMikuWorld
 				else
 				{
 					obj["datamodel"] = "spawn_slide";
+					obj["size"] = note.width;
 					// 0 up 1 left 2 right
 					if (note.flick == FlickType::Default)
 						obj["direction"] = "0";
@@ -1258,11 +1260,12 @@ namespace MikuMikuWorld
 						obj["direction"] = "1";
 					else
 						obj["direction"] = "2";
+
 				}
 				// 基础属性
 				obj["beat"] = note.tick / (double)TICKS_PER_BEAT;
 				//obj["size"] = note.width;
-				obj["track"] = note.lane + 0.5f;
+				obj["track"] = note.lane;
 				obj["extraspeed"] = note.extraSpeed;
 				objects.push_back(obj);
 			}
@@ -1278,7 +1281,7 @@ namespace MikuMikuWorld
 				obj["direction"] = note.damageDirection;
 				obj["beat"] = note.tick / (double)TICKS_PER_BEAT;
 				obj["size"] = note.width;
-				obj["track"] = note.lane + 0.5f;
+				obj["track"] = note.lane;
 				obj["extraspeed"] = note.extraSpeed;
 				objects.push_back(obj);
 			}
@@ -1348,8 +1351,8 @@ namespace MikuMikuWorld
 			obj["beat"] = start.tick / (double)TICKS_PER_BEAT;
 			// new 
 			obj["endbeat"] = end.tick / (double)TICKS_PER_BEAT;
-			obj["size"] = 1;
-			obj["track"] = 0;
+			obj["size"] = start.width;
+			obj["track"] = start.lane;
 			obj["type"] = note.holdEventType;
 			obj["colorsetID"] = note.colorsetID;
 			obj["highlight"] = note.highlight ? 1 : 0;
@@ -1379,11 +1382,10 @@ namespace MikuMikuWorld
 
 				json endStep;
 				auto& end = score.notes.at(note.end);
-				endStep["type"] = "end";
+				endStep["ease"] = "linear";
 				endStep["beat"] = end.tick / (double)TICKS_PER_BEAT;
 				endStep["size"] = end.width;
 				endStep["track"] = end.lane;
-				endStep["critical"] = end.critical;
 				steps.push_back(endStep);
 
 				obj["midpoints"] = steps;
@@ -1394,394 +1396,257 @@ namespace MikuMikuWorld
 
 		//写入json
 		root["version"] = 2;
-		root["songData"] = musicData;
+		root["musicdata"] = musicData;
 		root["tempos"] = bpmObjects;
 		root["note"] = objects;
 		root["rails"] = railObjects;
 		root["events"] = eventObjects;
+		root["speedchange"] = svObjects;
 		return root;
 	}
 
-	Score ScoreConverter::tougekiToScore(const json& vusc)
+	// 辅助函数：将字符串转换为 EaseType
+	EaseType getEaseTypeFromString(const std::string& ease)
+	{
+		if (ease == "in")
+			return EaseType::EaseIn;
+		else if (ease == "out")
+			return EaseType::EaseOut;
+		else if (ease == "inout")
+			return EaseType::EaseInOut;
+		else if (ease == "outin")
+			return EaseType::EaseOutIn;
+		return EaseType::Linear;
+	}
+
+	Score ScoreConverter::tougekiToScore(const json& root)
 	{
 		Score score;
-		if (vusc["version"] != 2)
+
+		// 1. 检查版本
+		if (root["version"] != 2)
 		{
 			throw std::runtime_error("Invalid version");
 		}
-		json usc = vusc["usc"];
-		score.layers.clear();
-		score.hiSpeedChanges.clear();
-		score.tempoChanges.clear();
 
-		score.metadata.musicOffset = usc["offset"].get<float>() * -1000.0f;
+		// 2. 读取基本元数据
+		json songData = root["musicdata"];
+		score.metadata.title = songData["songTitle"].get<std::string>();
+		score.metadata.artist = songData["artist"].get<std::string>();
+		//score.metadata.musicOffset = songData["offset"].get<float>() * -1000.0f;  // 转换回毫秒
 
-		for (const auto& obj : usc["objects"].get<std::vector<json>>())
+		// 3. 读取 BPM 变化
+		for (const auto& obj : root["tempos"])
 		{
-			if (obj["type"] == "bpm")
-			{
-				score.tempoChanges.push_back(Tempo{
-					(int)(obj["beat"].get<double>() * TICKS_PER_BEAT), obj["bpm"].get<float>() });
-			}
-			else if (obj["type"] == "timeScaleGroup")
-			{
-				int index = score.layers.size();
-				score.layers.push_back(Layer{ IO::formatString("#%d", index) });
-				for (const auto& change : obj["changes"])
-				{
-					id_t id = Note::getNextID();
-					score.hiSpeedChanges[id] =
-						HiSpeedChange{ id, (int)(change["beat"].get<double>() * TICKS_PER_BEAT),
-									   change["timeScale"].get<float>(), index };
-				}
-			}
-			else if (obj["type"] == "single")
+			score.tempoChanges.push_back(Tempo{
+				(int)(obj["beat"].get<double>() * TICKS_PER_BEAT),
+				obj["bpm"].get<float>()
+				});
+		}
+
+		// 4. 处理音符
+		for (const auto& obj : root["note"])
+		{
+			std::string datamodel = obj["datamodel"].get<std::string>();
+
+			if (datamodel == "spawn_bell" || datamodel == "spawn_ten" || datamodel == "spawn_slide")
 			{
 				Note note(NoteType::Tap);
 				note.tick = obj["beat"].get<double>() * TICKS_PER_BEAT;
-				note.width = obj["size"].get<float>() * 2;
-				note.lane = obj["lane"].get<float>() + 6 - obj["size"].get<float>();
-				note.critical = obj["critical"].get<bool>();
-				note.friction = obj["trace"].get<bool>();
-				if (obj.contains("direction"))
+				note.lane = obj["track"].get<float>();
+				note.width = 1; // 默认宽度
+				note.critical = (datamodel == "spawn_ten");
+				note.extraSpeed = obj["extraspeed"].get<float>();
+
+				if (datamodel == "spawn_slide")
 				{
-					std::string dir = obj["direction"].get<std::string>();
-					note.flick = dir == "up" ? FlickType::Default
-						: dir == "left" ? FlickType::Left
-						: FlickType::Right;
+					std::string direction = obj["direction"].get<std::string>();
+					note.width = obj["size"].get<float>();
+					if (direction == "0")
+						note.flick = FlickType::Default;
+					else if (direction == "1")
+						note.flick = FlickType::Left;
+					else if (direction == "2")
+						note.flick = FlickType::Right;
 				}
-				else
-				{
-					note.flick = FlickType::None;
-				}
-				note.layer = obj["timeScaleGroup"].get<int>();
+
 				note.ID = Note::getNextID();
 				score.notes[note.ID] = note;
 			}
-			else if (obj["type"] == "damage")
+			else if (datamodel == "spawn_danmaku")
 			{
 				Note note(NoteType::Damage);
 				note.tick = obj["beat"].get<double>() * TICKS_PER_BEAT;
-				note.width = obj["size"].get<float>() * 2;
-				note.lane = obj["lane"].get<float>() + 6 - obj["size"].get<float>();
-				note.layer = obj["timeScaleGroup"].get<int>();
+				note.lane = obj["track"].get<float>();
+				note.width = obj["size"].get<float>();
+				note.extraSpeed = obj["extraspeed"].get<float>();
+				note.damageType = (DamageType)obj["type"].get<int>();
+				note.damageDirection = (DamageDirection)obj["direction"].get<int>();
+
 				note.ID = Note::getNextID();
 				score.notes[note.ID] = note;
 			}
-			else if (obj["type"] == "guide")
+		}
+
+		// 5. 处理轨道/参考线
+		for (const auto& obj : root["rails"])
+		{
+			if (obj["datamodel"] == "spawn_rail")
 			{
 				HoldNote hold;
+				hold.startType = HoldNoteType::Guide;
+				hold.endType = HoldNoteType::Guide;
 
-				auto color = obj["color"].get<std::string>();
+				const auto& points = obj["midpoints"];
+				float extraSpeed = obj["extraspeed"].get<float>();
 
-				if (color == "neutral")
+				// 处理起始点
+				const auto& startPoint = points[0];
+				Note startNote(NoteType::Hold);
+				startNote.tick = startPoint["beat"].get<double>() * TICKS_PER_BEAT;
+				startNote.lane = startPoint["track"].get<float>();
+				startNote.width = startPoint["size"].get<float>();
+				startNote.extraSpeed = extraSpeed;
+				startNote.ID = Note::getNextID();
+				score.notes[startNote.ID] = startNote;
+
+				hold.start.ID = startNote.ID;
+				hold.start.ease = getEaseTypeFromString(startPoint["ease"].get<std::string>());
+
+				// 处理中间点
+				for (size_t i = 1; i < points.size() - 1; i++)
 				{
-					hold.guideColor = GuideColor::Neutral;
-				}
-				else if (color == "red")
-				{
-					hold.guideColor = GuideColor::Red;
-				}
-				else if (color == "green")
-				{
-					hold.guideColor = GuideColor::Green;
-				}
-				else if (color == "blue")
-				{
-					hold.guideColor = GuideColor::Blue;
-				}
-				else if (color == "yellow")
-				{
-					hold.guideColor = GuideColor::Yellow;
-				}
-				else if (color == "purple")
-				{
-					hold.guideColor = GuideColor::Purple;
-				}
-				else if (color == "cyan")
-				{
-					hold.guideColor = GuideColor::Cyan;
-				}
-				else if (color == "black")
-				{
-					hold.guideColor = GuideColor::Black;
-				}
-				hold.fadeType = obj["fade"].get<std::string>() == "none" ? FadeType::None
-					: obj["fade"].get<std::string>() == "in" ? FadeType::In
-					: FadeType::Out;
+					const auto& point = points[i];
+					Note midNote(NoteType::HoldMid);
+					midNote.tick = point["beat"].get<double>() * TICKS_PER_BEAT;
+					midNote.lane = point["track"].get<float>();
+					midNote.width = point["size"].get<float>();
+					midNote.extraSpeed = extraSpeed;
+					midNote.ID = Note::getNextID();
+					midNote.parentID = startNote.ID;
+					score.notes[midNote.ID] = midNote;
 
-				for (int i = 0; i < obj["midpoints"].size(); i++)
-				{
-					const auto& step = obj["midpoints"][i];
-					if (i == 0)
-					{
-						Note startNote(NoteType::Hold);
-						startNote.tick = step["beat"].get<double>() * TICKS_PER_BEAT;
-						startNote.lane = step["lane"].get<float>() + 6 - step["size"].get<float>();
-						startNote.layer = step["timeScaleGroup"].get<int>();
-						startNote.ID = Note::getNextID();
-						startNote.width = step["size"].get<float>() * 2;
-						score.notes[startNote.ID] = startNote;
-						hold.start.ID = startNote.ID;
-
-						std::string ease = jsonIO::tryGetValue(step, "ease", std::string("linear"));
-						if (ease == "in")
-						{
-							hold.start.ease = EaseType::EaseIn;
-						}
-						else if (ease == "out")
-						{
-							hold.start.ease = EaseType::EaseOut;
-						}
-						else if (ease == "inout")
-						{
-							hold.start.ease = EaseType::EaseInOut;
-						}
-						else if (ease == "outin")
-						{
-							hold.start.ease = EaseType::EaseOutIn;
-						}
-						else
-						{
-							hold.start.ease = EaseType::Linear;
-						}
-						hold.startType = HoldNoteType::Guide;
-					}
-					else if (i == obj["midpoints"].size() - 1)
-					{
-						Note endNote(NoteType::HoldEnd);
-						endNote.tick = step["beat"].get<double>() * TICKS_PER_BEAT;
-						endNote.lane = step["lane"].get<float>() + 6 - step["size"].get<float>();
-						endNote.layer = step["timeScaleGroup"].get<int>();
-						endNote.ID = Note::getNextID();
-						endNote.parentID = hold.start.ID;
-						endNote.width = step["size"].get<float>() * 2;
-						score.notes[endNote.ID] = endNote;
-						hold.end = endNote.ID;
-						hold.endType = HoldNoteType::Guide;
-					}
-					else
-					{
-						HoldStep s;
-						Note mid(NoteType::HoldMid);
-						mid.tick = step["beat"].get<double>() * TICKS_PER_BEAT;
-						mid.lane = step["lane"].get<float>() + 6 - step["size"].get<float>();
-						mid.layer = step["timeScaleGroup"].get<int>();
-						mid.ID = Note::getNextID();
-						mid.parentID = hold.start.ID;
-						mid.width = step["size"].get<float>() * 2;
-						score.notes[mid.ID] = mid;
-						s.ID = mid.ID;
-
-						std::string ease = jsonIO::tryGetValue(step, "ease", std::string("linear"));
-						if (ease == "in")
-						{
-							s.ease = EaseType::EaseIn;
-						}
-						else if (ease == "out")
-						{
-							s.ease = EaseType::EaseOut;
-						}
-						else if (ease == "inout")
-						{
-							s.ease = EaseType::EaseInOut;
-						}
-						else if (ease == "outin")
-						{
-							s.ease = EaseType::EaseOutIn;
-						}
-						else
-						{
-							s.ease = EaseType::Linear;
-						}
-						s.type = HoldStepType::Hidden;
-						hold.steps.push_back(s);
-					}
-				}
-				score.holdNotes[hold.start.ID] = hold;
-			}
-			else if (obj["type"] == "slide")
-			{
-				HoldNote hold;
-				hold.fadeType = FadeType::None;
-
-				auto connections = obj["connections"].get<std::vector<json>>();
-				std::stable_sort(connections.begin(), connections.end(),
-					[](const json& a, const json& b)
-					{
-						if (a["type"] == "start")
-						{
-							return true;
-						}
-						else if (b["type"] == "start")
-						{
-							return false;
-						}
-						else if (a["type"] == "end")
-						{
-							return false;
-						}
-						else if (b["type"] == "end")
-						{
-							return true;
-						}
-						return a["beat"].get<double>() < b["beat"].get<float>();
-					});
-
-				bool isCritical;
-				for (const auto& step : connections)
-				{
-					auto type = step["type"].get<std::string>();
-					if (type == "start")
-					{
-						Note startNote(NoteType::Hold);
-						startNote.tick = step["beat"].get<double>() * TICKS_PER_BEAT;
-						startNote.lane = step["lane"].get<float>() + 6 - step["size"].get<float>();
-						startNote.layer = step["timeScaleGroup"].get<int>();
-						startNote.critical = step["critical"].get<bool>();
-						isCritical = startNote.critical;
-						startNote.width = step["size"].get<float>() * 2;
-						if (step["judgeType"].get<std::string>() == "trace")
-						{
-							startNote.friction = true;
-							hold.startType = HoldNoteType::Normal;
-						}
-						else if (step["judgeType"].get<std::string>() == "none")
-						{
-							hold.startType = HoldNoteType::Hidden;
-						}
-						else
-						{
-							hold.startType = HoldNoteType::Normal;
-						}
-						startNote.ID = Note::getNextID();
-						score.notes[startNote.ID] = startNote;
-						hold.start.ID = startNote.ID;
-
-						std::string ease = jsonIO::tryGetValue(step, "ease", std::string("linear"));
-						if (ease == "in")
-						{
-							hold.start.ease = EaseType::EaseIn;
-						}
-						else if (ease == "out")
-						{
-							hold.start.ease = EaseType::EaseOut;
-						}
-						else if (ease == "inout")
-						{
-							hold.start.ease = EaseType::EaseInOut;
-						}
-						else if (ease == "outin")
-						{
-							hold.start.ease = EaseType::EaseOutIn;
-						}
-						else
-						{
-							hold.start.ease = EaseType::Linear;
-						}
-					}
-					else if (type == "end")
-					{
-						Note endNote(NoteType::HoldEnd);
-						endNote.tick = step["beat"].get<double>() * TICKS_PER_BEAT;
-						endNote.lane = step["lane"].get<float>() + 6 - step["size"].get<float>();
-						endNote.layer = step["timeScaleGroup"].get<int>();
-						endNote.width = step["size"].get<float>() * 2;
-						endNote.critical = isCritical || step["critical"].get<bool>();
-						endNote.flick = step.contains("direction")
-							? step["direction"].get<std::string>() == "up"
-							? FlickType::Default
-							: step["direction"].get<std::string>() == "left"
-							? FlickType::Left
-							: FlickType::Right
-							: FlickType::None;
-						endNote.ID = Note::getNextID();
-						endNote.parentID = hold.start.ID;
-
-						if (step["judgeType"].get<std::string>() == "trace")
-						{
-							endNote.friction = true;
-							hold.endType = HoldNoteType::Normal;
-						}
-						else if (step["judgeType"].get<std::string>() == "none")
-						{
-							hold.endType = HoldNoteType::Hidden;
-						}
-						else
-						{
-							hold.endType = HoldNoteType::Normal;
-						}
-						score.notes[endNote.ID] = endNote;
-						hold.end = endNote.ID;
-					}
-					else
-					{
-						HoldStep s;
-						Note mid(NoteType::HoldMid);
-						mid.tick = step["beat"].get<double>() * TICKS_PER_BEAT;
-						mid.lane = step["lane"].get<float>() + 6 - step["size"].get<float>();
-						mid.width = step["size"].get<float>() * 2;
-						mid.layer = step["timeScaleGroup"].get<int>();
-						mid.critical = isCritical;
-						mid.ID = Note::getNextID();
-						mid.parentID = hold.start.ID;
-						score.notes[mid.ID] = mid;
-						s.ID = mid.ID;
-
-						std::string ease = jsonIO::tryGetValue(step, "ease", std::string("linear"));
-						if (ease == "in")
-						{
-							s.ease = EaseType::EaseIn;
-						}
-						else if (ease == "out")
-						{
-							s.ease = EaseType::EaseOut;
-						}
-						else if (ease == "inout")
-						{
-							s.ease = EaseType::EaseInOut;
-						}
-						else if (ease == "outin")
-						{
-							s.ease = EaseType::EaseOutIn;
-						}
-						else
-						{
-							s.ease = EaseType::Linear;
-						}
-
-						if (type == "tick")
-						{
-							if (step.contains("critical"))
-							{
-								s.type = HoldStepType::Normal;
-							}
-							else
-							{
-								s.type = HoldStepType::Hidden;
-							}
-						}
-						else if (type == "attach")
-						{
-							s.type = HoldStepType::Skip;
-						}
-						hold.steps.push_back(s);
-					}
+					HoldStep step;
+					step.ID = midNote.ID;
+					step.type = HoldStepType::Hidden;
+					step.ease = getEaseTypeFromString(point["ease"].get<std::string>());
+					hold.steps.push_back(step);
 				}
 
-				score.holdNotes[hold.start.ID] = hold;
+				// 处理结束点
+				const auto& endPoint = points[points.size() - 1];
+				Note endNote(NoteType::HoldEnd);
+				endNote.tick = endPoint["beat"].get<double>() * TICKS_PER_BEAT;
+				endNote.lane = endPoint["track"].get<float>();
+				endNote.width = endPoint["size"].get<float>();
+				endNote.extraSpeed = extraSpeed;
+				endNote.ID = Note::getNextID();
+				endNote.parentID = startNote.ID;
+				score.notes[endNote.ID] = endNote;
+				hold.end = endNote.ID;
+
+				score.holdNotes[startNote.ID] = hold;
 			}
 		}
 
+		// 6. 处理事件
+		for (const auto& obj : root["events"])
+		{
+			if (obj["datamodel"] == "tigger_event")
+			{
+				HoldNote hold;
+				hold.holdEventType = static_cast<HoldEventType>(obj["type"].get<int>());
+
+				// 创建开始音符
+				Note startNote(NoteType::Hold);
+				Note endNote(NoteType::HoldEnd);
+				startNote.tick = obj["beat"].get<double>() * TICKS_PER_BEAT;
+				startNote.lane = obj["track"].get<float>();
+				startNote.width = obj["size"].get<float>();
+				startNote.ID = Note::getNextID();
+				score.notes[startNote.ID] = startNote;
+
+				// 如果是激光事件，处理中间点
+				if (hold.holdEventType == HoldEventType::Event_Laser && obj.contains("midpoints"))
+				{
+					const auto& points = obj["midpoints"];
+					// 处理起始点
+					const auto& startPoint = points[0];
+					hold.start.ease = getEaseTypeFromString(startPoint["ease"].get<std::string>());
+
+					// 处理中间点
+					for (size_t i = 1; i < points.size() - 1; i++)
+					{
+						const auto& point = points[i];
+						Note midNote(NoteType::HoldMid);
+						midNote.tick = point["beat"].get<double>() * TICKS_PER_BEAT;
+						midNote.lane = point["track"].get<float>();
+						midNote.width = point["size"].get<float>();
+						midNote.ID = Note::getNextID();
+						midNote.parentID = startNote.ID;
+						score.notes[midNote.ID] = midNote;
+
+						HoldStep step;
+						step.ID = midNote.ID;
+						step.type = HoldStepType::Hidden;
+						step.ease = getEaseTypeFromString(point["ease"].get<std::string>());
+						hold.steps.push_back(step);
+					}
+
+					// 处理结束点
+					const auto& endPoint = points[points.size() - 1];
+					endNote.tick = endPoint["beat"].get<double>() * TICKS_PER_BEAT;
+					endNote.lane = endPoint["track"].get<float>();
+					endNote.width = endPoint["size"].get<float>();
+					endNote.ID = Note::getNextID();
+					endNote.parentID = startNote.ID;
+					score.notes[endNote.ID] = endNote;
+					hold.end = endNote.ID;
+				}
+				else
+				{
+					
+					endNote.tick = obj["endbeat"].get<double>() * TICKS_PER_BEAT;
+					endNote.lane = obj["track"].get<float>();
+					endNote.width = obj["size"].get<float>();
+					endNote.ID = Note::getNextID();
+					endNote.parentID = startNote.ID;
+					score.notes[endNote.ID] = endNote;
+				}
+
+				hold.start.ID = startNote.ID;
+				hold.end = endNote.ID;
+				hold.colorsetID = obj["colorsetID"].get<int>();
+				hold.highlight = obj["highlight"].get<int>() == 1;
+
+				score.holdNotes[startNote.ID] = hold;
+			}
+		}
+
+		// 7. 确保至少有一个默认层
 		if (score.layers.size() == 0)
 		{
 			score.layers.push_back(Layer{ "#0" });
 		}
+
+		// 8. 确保至少有一个默认 BPM
 		if (score.tempoChanges.size() == 0)
 		{
 			score.tempoChanges.push_back(Tempo{ 0, 120 });
 		}
 
+		// 9 sv
+		for (const auto& obj : root["speedchange"])
+		{
+			id_t id = Note::getNextID();
+			score.hiSpeedChanges[id] =
+				HiSpeedChange{ id, (int)(obj["beat"].get<double>() * TICKS_PER_BEAT),
+							   obj["extraspeed"].get<float>(), 0 };
+		}
+		
+
 		return score;
 	}
+	
+
 }

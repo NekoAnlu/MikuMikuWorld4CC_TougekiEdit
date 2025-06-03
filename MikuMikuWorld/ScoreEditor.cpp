@@ -409,7 +409,8 @@ namespace MikuMikuWorld
 				uscfile >> usc;
 				uscfile.close();
 
-				newScore = ScoreConverter::uscToScore(usc);
+				//newScore = ScoreConverter::uscToScore(usc);
+				newScore = ScoreConverter::tougekiToScore(usc);
 			}
 			else if (extension == MMWS_EXTENSION || extension == CC_MMWS_EXTENSION)
 			{
@@ -473,9 +474,9 @@ namespace MikuMikuWorld
 		IO::FileDialog fileDialog{};
 		fileDialog.parentWindowHandle = Application::windowState.windowHandle;
 		fileDialog.title = "Open Score File";
-		//fileDialog.filters = { { "Score Files", "*.ccmmws;*.mmws;*.usc;*.sus" } };
+		fileDialog.filters = { { "Score Files", "*.ccmmws;*.mmws;*.usc;*.sus" } };
 		//mod ÆÁ±ÎµôuscµÄ¶ÁÈ¡
-		fileDialog.filters = { { "Score Files", "*.ccmmws;*.mmws" } };
+		//fileDialog.filters = { { "Score Files", "*.ccmmws;*.mmws" } };
 
 		if (fileDialog.openFile() == IO::FileDialogResult::OK)
 			loadScore(fileDialog.outputFilename);
