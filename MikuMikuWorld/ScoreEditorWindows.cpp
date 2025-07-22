@@ -200,7 +200,34 @@ namespace MikuMikuWorld
 					{
 						for (auto& id : context.selectedNotes)
 						{
-							context.score.notes.at(id).layer = i;
+							Note& tnote = context.score.notes.at(id);
+							tnote.layer = i;
+							//mod 如果当前的note为hold 则其所有的step都一起改layer
+							if (tnote.isHold())
+							{
+								// 1先找这个note对应的hold的index
+								int holdIndex = -1;
+								auto prevHoldIndex = holdIndex;
+								if (tnote.getType() == NoteType::Hold)
+								{
+									holdIndex = id;
+								}
+								else
+								{
+									holdIndex = tnote.parentID;
+								}
+								// 2拿到对应的hold
+								auto& hold = context.score.holdNotes.at(holdIndex);
+								// 3遍历改其step所有layer值
+								for (auto& step : hold.steps)
+								{
+									context.score.notes.at(step.ID).layer = i;
+								}
+								// 头尾需要单独改
+								context.score.notes.at(hold.start.ID).layer = i;
+								context.score.notes.at(hold.end).layer = i;
+
+							}
 						}
 						for (auto& id : context.selectedHiSpeedChanges)
 						{

@@ -1206,6 +1206,7 @@ namespace MikuMikuWorld
 		std::vector<json> railObjects;
 		std::vector<json> eventObjects;
 		std::vector<json> svObjects;
+		std::vector<json> laserObjects;
 		std::vector<json> objects;
 
 		// 处理meta
@@ -1225,12 +1226,24 @@ namespace MikuMikuWorld
 		}
 
 		// 处理变速事件
-		for (const auto& [_, hs] : score.hiSpeedChanges)
+		// new 按layer处理
+		for (int i = 0;i < score.layers.size();i++)
 		{
 			json obj;
-			obj["beat"] = hs.tick / (double)TICKS_PER_BEAT;
-			obj["extraspeed"] = hs.speed;
-			obj["datamodel"] = "event_sv";
+			std::vector<json> timegroupObjects;
+			for (const auto& [_, hs] : score.hiSpeedChanges)
+			{
+				if (hs.layer == i)
+				{
+					json svobj;
+					svobj["beat"] = hs.tick / (double)TICKS_PER_BEAT;
+					svobj["extraspeed"] = std::roundf(hs.speed * 100) / 100;
+
+					timegroupObjects.push_back(svobj);
+				}
+			}
+			obj["speedscaler"] = timegroupObjects;
+			obj["layer"] = i;
 			svObjects.push_back(obj);
 		}
 		
@@ -1252,19 +1265,21 @@ namespace MikuMikuWorld
 				else
 				{
 					obj["datamodel"] = "spawn_slide";
-					obj["size"] = note.width;
+					obj["width"] = note.width;
 					// 0 up 1 left 2 right
 					if (note.flick == FlickType::Default)
-						obj["direction"] = "0";
-					else if (note.flick == FlickType::Left)
 						obj["direction"] = "1";
-					else
+					else if (note.flick == FlickType::Left)
 						obj["direction"] = "2";
-
+					else if(note.flick == FlickType::Right)
+						obj["direction"] = "3";
+					else
+						obj["direction"] = "0";
 				}
 				// 基础属性
+				obj["layer"] = note.layer;
 				obj["beat"] = note.tick / (double)TICKS_PER_BEAT;
-				//obj["size"] = note.width;
+				obj["width"] = note.width;
 				obj["track"] = note.lane;
 				obj["extraspeed"] = note.extraSpeed;
 				objects.push_back(obj);
@@ -1273,6 +1288,7 @@ namespace MikuMikuWorld
 			else if (note.getType() == NoteType::Damage)
 			{
 				json obj;
+				obj["layer"] = note.layer;
 				// 确定弹幕类型
 				obj["datamodel"] = "spawn_danmaku";
 				// new 弹幕类型 WIP
@@ -1280,7 +1296,7 @@ namespace MikuMikuWorld
 				// 方向 0 none 1 middle 2 left 3 right
 				obj["direction"] = note.damageDirection;
 				obj["beat"] = note.tick / (double)TICKS_PER_BEAT;
-				obj["size"] = note.width;
+				obj["width"] = note.width;
 				obj["track"] = note.lane;
 				obj["extraspeed"] = note.extraSpeed;
 				objects.push_back(obj);
@@ -1294,6 +1310,8 @@ namespace MikuMikuWorld
 			// 轨道
 			if (note.isGuide())
 			{
+				// 获取hold头的layer
+				obj["layer"] = score.notes.at(note.start.ID).layer;
 				obj["datamodel"] = "spawn_rail";
 				auto& start = score.notes.at(note.start.ID);
 				//obj["color"] = guideColors[(int)note.guideColor];
@@ -1309,7 +1327,7 @@ namespace MikuMikuWorld
 				// 开头
 				json startStep;
 				startStep["beat"] = start.tick / (double)TICKS_PER_BEAT;
-				startStep["size"] = start.width;
+				startStep["width"] = start.width;
 				startStep["track"] = start.lane;
 				startStep["ease"] = easeNames[(int)note.start.ease];
 				steps.push_back(startStep);
@@ -1320,7 +1338,7 @@ namespace MikuMikuWorld
 					json stepObj;
 					auto& stepNote = score.notes.at(step.ID);
 					stepObj["beat"] = stepNote.tick / (double)TICKS_PER_BEAT;
-					stepObj["size"] = stepNote.width;
+					stepObj["width"] = stepNote.width;
 					stepObj["track"] = stepNote.lane;
 					stepObj["ease"] = easeNames[(int)step.ease];
 					steps.push_back(stepObj);
@@ -1330,41 +1348,53 @@ namespace MikuMikuWorld
 				json endStep;
 				auto& end = score.notes.at(note.end);
 				endStep["beat"] = end.tick / (double)TICKS_PER_BEAT;
-				endStep["size"] = end.width;
+				endStep["width"] = end.width;
 				endStep["track"] = end.lane ;
 				endStep["ease"] = "linear";
 				steps.push_back(endStep);
 
 				obj["midpoints"] = steps;
 				railObjects.push_back(obj);
-				continue;
 			}
 			
-			// Hold只作为事件处理
-			obj["datamodel"] = "tigger_event";
-			// 只考虑开头结尾
-			auto& start = score.notes.at(note.start.ID);
-			auto& end = score.notes.at(note.end);
-
-			//std::vector<json> steps;
-			//steps.reserve(note.steps.size() + 1);
-			obj["beat"] = start.tick / (double)TICKS_PER_BEAT;
-			// new 
-			obj["endbeat"] = end.tick / (double)TICKS_PER_BEAT;
-			obj["size"] = start.width;
-			obj["track"] = start.lane;
-			obj["type"] = note.holdEventType;
-			obj["colorsetID"] = note.colorsetID;
-			obj["highlight"] = note.highlight ? 1 : 0;
-
-			//如果为laser laser会平移
-			if (note.holdEventType == HoldEventType::Event_Laser)
+			// 事件
+			else if (note.holdEventType == HoldEventType::Event_Colorset)
 			{
+				obj["layer"] = score.notes.at(note.start.ID).layer;
+				// Hold只作为事件处理
+				obj["datamodel"] = "tigger_event";
+				// 只考虑开头结尾
+				auto& start = score.notes.at(note.start.ID);
+				auto& end = score.notes.at(note.end);
+
+				//std::vector<json> steps;
+				//steps.reserve(note.steps.size() + 1);
+				obj["beat"] = start.tick / (double)TICKS_PER_BEAT;
+				// new 
+				obj["endbeat"] = end.tick / (double)TICKS_PER_BEAT;
+				obj["width"] = start.width;
+				obj["track"] = start.lane;
+				obj["type"] = note.holdEventType;
+				obj["colorsetID"] = note.colorsetID;
+				obj["highlight"] = note.highlight ? 1 : 0;
+
+				eventObjects.push_back(obj);
+			}
+
+			// 激光
+			else
+			{
+				obj["layer"] = score.notes.at(note.start.ID).layer;
+				obj["datamodel"] = "trigger_laser";
+				obj["type"] = note.holdEventType;
+
+				auto& start = score.notes.at(note.start.ID);
+				auto& end = score.notes.at(note.end);
 				std::vector<json> steps;
 				steps.reserve(note.steps.size() + 1);
 				json startStep;
 				startStep["beat"] = start.tick / (double)TICKS_PER_BEAT;
-				startStep["size"] = start.width;
+				startStep["width"] = start.width;
 				startStep["track"] = start.lane;
 				startStep["ease"] = easeNames[(int)note.start.ease];
 				steps.push_back(startStep);
@@ -1374,34 +1404,34 @@ namespace MikuMikuWorld
 					json stepObj;
 					auto& stepNote = score.notes.at(step.ID);
 					stepObj["beat"] = stepNote.tick / (double)TICKS_PER_BEAT;
-					stepObj["size"] = stepNote.width;
+					stepObj["width"] = stepNote.width;
 					stepObj["track"] = stepNote.lane;
 					stepObj["ease"] = easeNames[(int)step.ease];
 					steps.push_back(stepObj);
 				}
 
 				json endStep;
-				auto& end = score.notes.at(note.end);
 				endStep["ease"] = "linear";
 				endStep["beat"] = end.tick / (double)TICKS_PER_BEAT;
-				endStep["size"] = end.width;
+				endStep["width"] = end.width;
 				endStep["track"] = end.lane;
 				steps.push_back(endStep);
 
 				obj["midpoints"] = steps;
-			}
 
-			eventObjects.push_back(obj);
+				laserObjects.push_back(obj);
+			}
 		}
 
 		//写入json
-		root["version"] = 2;
+		root["jsonversion"] = 2;
 		root["musicdata"] = musicData;
-		root["tempos"] = bpmObjects;
-		root["note"] = objects;
+		root["timing"] = bpmObjects;
+		root["notes"] = objects;
 		root["rails"] = railObjects;
+		root["laser"] = laserObjects;
 		root["events"] = eventObjects;
-		root["speedchange"] = svObjects;
+		root["speedchanges"] = svObjects;
 		return root;
 	}
 
@@ -1424,7 +1454,7 @@ namespace MikuMikuWorld
 		Score score;
 
 		// 1. 检查版本
-		if (root["version"] != 2)
+		if (root["jsonversion"] != 2)
 		{
 			throw std::runtime_error("Invalid version");
 		}
@@ -1436,7 +1466,7 @@ namespace MikuMikuWorld
 		//score.metadata.musicOffset = songData["offset"].get<float>() * -1000.0f;  // 转换回毫秒
 
 		// 3. 读取 BPM 变化
-		for (const auto& obj : root["tempos"])
+		for (const auto& obj : root["timing"])
 		{
 			score.tempoChanges.push_back(Tempo{
 				(int)(obj["beat"].get<double>() * TICKS_PER_BEAT),
@@ -1445,7 +1475,7 @@ namespace MikuMikuWorld
 		}
 
 		// 4. 处理音符
-		for (const auto& obj : root["note"])
+		for (const auto& obj : root["notes"])
 		{
 			std::string datamodel = obj["datamodel"].get<std::string>();
 
@@ -1457,11 +1487,12 @@ namespace MikuMikuWorld
 				note.width = 1; // 默认宽度
 				note.critical = (datamodel == "spawn_ten");
 				note.extraSpeed = obj["extraspeed"].get<float>();
+				note.layer = obj["layer"].get<int>();
 
 				if (datamodel == "spawn_slide")
 				{
 					std::string direction = obj["direction"].get<std::string>();
-					note.width = obj["size"].get<float>();
+					note.width = obj["width"].get<float>();
 					if (direction == "0")
 						note.flick = FlickType::Default;
 					else if (direction == "1")
@@ -1478,10 +1509,11 @@ namespace MikuMikuWorld
 				Note note(NoteType::Damage);
 				note.tick = obj["beat"].get<double>() * TICKS_PER_BEAT;
 				note.lane = obj["track"].get<float>();
-				note.width = obj["size"].get<float>();
+				note.width = obj["width"].get<float>();
 				note.extraSpeed = obj["extraspeed"].get<float>();
 				note.damageType = (DamageType)obj["type"].get<int>();
 				note.damageDirection = (DamageDirection)obj["direction"].get<int>();
+				note.layer = obj["layer"].get<int>();
 
 				note.ID = Note::getNextID();
 				score.notes[note.ID] = note;
@@ -1491,6 +1523,7 @@ namespace MikuMikuWorld
 		// 5. 处理轨道/参考线
 		for (const auto& obj : root["rails"])
 		{
+			int layer = obj["layer"].get<int>();
 			if (obj["datamodel"] == "spawn_rail")
 			{
 				HoldNote hold;
@@ -1505,9 +1538,10 @@ namespace MikuMikuWorld
 				Note startNote(NoteType::Hold);
 				startNote.tick = startPoint["beat"].get<double>() * TICKS_PER_BEAT;
 				startNote.lane = startPoint["track"].get<float>();
-				startNote.width = startPoint["size"].get<float>();
+				startNote.width = startPoint["width"].get<float>();
 				startNote.extraSpeed = extraSpeed;
 				startNote.ID = Note::getNextID();
+				startNote.layer = layer;
 				score.notes[startNote.ID] = startNote;
 
 				hold.start.ID = startNote.ID;
@@ -1520,10 +1554,11 @@ namespace MikuMikuWorld
 					Note midNote(NoteType::HoldMid);
 					midNote.tick = point["beat"].get<double>() * TICKS_PER_BEAT;
 					midNote.lane = point["track"].get<float>();
-					midNote.width = point["size"].get<float>();
+					midNote.width = point["width"].get<float>();
 					midNote.extraSpeed = extraSpeed;
 					midNote.ID = Note::getNextID();
 					midNote.parentID = startNote.ID;
+					midNote.layer = layer;
 					score.notes[midNote.ID] = midNote;
 
 					HoldStep step;
@@ -1538,10 +1573,76 @@ namespace MikuMikuWorld
 				Note endNote(NoteType::HoldEnd);
 				endNote.tick = endPoint["beat"].get<double>() * TICKS_PER_BEAT;
 				endNote.lane = endPoint["track"].get<float>();
-				endNote.width = endPoint["size"].get<float>();
+				endNote.width = endPoint["width"].get<float>();
 				endNote.extraSpeed = extraSpeed;
 				endNote.ID = Note::getNextID();
 				endNote.parentID = startNote.ID;
+				endNote.layer = layer;
+				score.notes[endNote.ID] = endNote;
+				hold.end = endNote.ID;
+
+				score.holdNotes[startNote.ID] = hold;
+			}
+		}
+
+
+		// 5.1 处理激光
+		for (const auto& obj : root["laser"])
+		{
+			int layer = obj["layer"].get<int>();
+			if (obj["datamodel"] == "tigger_laser")
+			{
+				HoldNote hold;
+				hold.holdEventType = static_cast<HoldEventType>(obj["type"].get<int>());
+
+				const auto& points = obj["midpoints"];
+				//float extraSpeed = obj["extraspeed"].get<float>();
+
+				// 处理起始点
+				const auto& startPoint = points[0];
+				Note startNote(NoteType::Hold);
+				startNote.tick = startPoint["beat"].get<double>() * TICKS_PER_BEAT;
+				startNote.lane = startPoint["track"].get<float>();
+				startNote.width = startPoint["width"].get<float>();
+				//startNote.extraSpeed = extraSpeed;
+				startNote.layer = layer;
+				startNote.ID = Note::getNextID();
+				score.notes[startNote.ID] = startNote;
+
+				hold.start.ID = startNote.ID;
+				hold.start.ease = getEaseTypeFromString(startPoint["ease"].get<std::string>());
+
+				// 处理中间点
+				for (size_t i = 1; i < points.size() - 1; i++)
+				{
+					const auto& point = points[i];
+					Note midNote(NoteType::HoldMid);
+					midNote.tick = point["beat"].get<double>() * TICKS_PER_BEAT;
+					midNote.lane = point["track"].get<float>();
+					midNote.width = point["width"].get<float>();
+					//midNote.extraSpeed = extraSpeed;
+					midNote.ID = Note::getNextID();
+					midNote.parentID = startNote.ID;
+					midNote.layer = layer;
+					score.notes[midNote.ID] = midNote;
+
+					HoldStep step;
+					step.ID = midNote.ID;
+					step.type = HoldStepType::Hidden;
+					step.ease = getEaseTypeFromString(point["ease"].get<std::string>());
+					hold.steps.push_back(step);
+				}
+
+				// 处理结束点
+				const auto& endPoint = points[points.size() - 1];
+				Note endNote(NoteType::HoldEnd);
+				endNote.tick = endPoint["beat"].get<double>() * TICKS_PER_BEAT;
+				endNote.lane = endPoint["track"].get<float>();
+				endNote.width = endPoint["width"].get<float>();
+				//endNote.extraSpeed = extraSpeed;
+				endNote.ID = Note::getNextID();
+				endNote.parentID = startNote.ID;
+				endNote.layer = layer;
 				score.notes[endNote.ID] = endNote;
 				hold.end = endNote.ID;
 
@@ -1552,6 +1653,7 @@ namespace MikuMikuWorld
 		// 6. 处理事件
 		for (const auto& obj : root["events"])
 		{
+			int layer = obj["layer"].get<int>();
 			if (obj["datamodel"] == "tigger_event")
 			{
 				HoldNote hold;
@@ -1562,58 +1664,19 @@ namespace MikuMikuWorld
 				Note endNote(NoteType::HoldEnd);
 				startNote.tick = obj["beat"].get<double>() * TICKS_PER_BEAT;
 				startNote.lane = obj["track"].get<float>();
-				startNote.width = obj["size"].get<float>();
+				startNote.width = obj["width"].get<float>();
+				startNote.layer = layer;
 				startNote.ID = Note::getNextID();
 				score.notes[startNote.ID] = startNote;
-
-				// 如果是激光事件，处理中间点
-				if (hold.holdEventType == HoldEventType::Event_Laser && obj.contains("midpoints"))
-				{
-					const auto& points = obj["midpoints"];
-					// 处理起始点
-					const auto& startPoint = points[0];
-					hold.start.ease = getEaseTypeFromString(startPoint["ease"].get<std::string>());
-
-					// 处理中间点
-					for (size_t i = 1; i < points.size() - 1; i++)
-					{
-						const auto& point = points[i];
-						Note midNote(NoteType::HoldMid);
-						midNote.tick = point["beat"].get<double>() * TICKS_PER_BEAT;
-						midNote.lane = point["track"].get<float>();
-						midNote.width = point["size"].get<float>();
-						midNote.ID = Note::getNextID();
-						midNote.parentID = startNote.ID;
-						score.notes[midNote.ID] = midNote;
-
-						HoldStep step;
-						step.ID = midNote.ID;
-						step.type = HoldStepType::Hidden;
-						step.ease = getEaseTypeFromString(point["ease"].get<std::string>());
-						hold.steps.push_back(step);
-					}
-
-					// 处理结束点
-					const auto& endPoint = points[points.size() - 1];
-					endNote.tick = endPoint["beat"].get<double>() * TICKS_PER_BEAT;
-					endNote.lane = endPoint["track"].get<float>();
-					endNote.width = endPoint["size"].get<float>();
-					endNote.ID = Note::getNextID();
-					endNote.parentID = startNote.ID;
-					score.notes[endNote.ID] = endNote;
-					hold.end = endNote.ID;
-				}
-				else
-				{
-					
-					endNote.tick = obj["endbeat"].get<double>() * TICKS_PER_BEAT;
-					endNote.lane = obj["track"].get<float>();
-					endNote.width = obj["size"].get<float>();
-					endNote.ID = Note::getNextID();
-					endNote.parentID = startNote.ID;
-					score.notes[endNote.ID] = endNote;
-				}
-
+				
+				endNote.tick = obj["endbeat"].get<double>() * TICKS_PER_BEAT;
+				endNote.lane = obj["track"].get<float>();
+				endNote.width = obj["width"].get<float>();
+				endNote.layer = layer;
+				endNote.ID = Note::getNextID();
+				endNote.parentID = startNote.ID;
+				
+				score.notes[endNote.ID] = endNote;
 				hold.start.ID = startNote.ID;
 				hold.end = endNote.ID;
 				hold.colorsetID = obj["colorsetID"].get<int>();
@@ -1630,18 +1693,23 @@ namespace MikuMikuWorld
 		}
 
 		// 8. 确保至少有一个默认 BPM
-		if (score.tempoChanges.size() == 0)
+		/*if (score.tempoChanges.size() == 0)
 		{
 			score.tempoChanges.push_back(Tempo{ 0, 120 });
-		}
+		}*/
 
 		// 9 sv
-		for (const auto& obj : root["speedchange"])
+		for (const auto& obj : root["speedchanges"])
 		{
-			id_t id = Note::getNextID();
-			score.hiSpeedChanges[id] =
-				HiSpeedChange{ id, (int)(obj["beat"].get<double>() * TICKS_PER_BEAT),
-							   obj["extraspeed"].get<float>(), 0 };
+			int layer = obj["layer"].get<int>();
+			score.layers.push_back(Layer{ IO::formatString("#%d", layer) });
+			for (const auto& obj2 : obj["speedscaler"])
+			{
+				id_t id = Note::getNextID();
+				score.hiSpeedChanges[id] =
+					HiSpeedChange{ id, (int)(obj2["beat"].get<double>() * TICKS_PER_BEAT),
+								   obj2["extraspeed"].get<float>(), layer};
+			}
 		}
 		
 

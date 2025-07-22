@@ -45,7 +45,7 @@ namespace MikuMikuWorld
 
 	bool Note::canTrace() const
 	{
-		//mod ȫɾ
+		//mod 
 		return false;
 	}
 
