@@ -863,6 +863,16 @@ namespace MikuMikuWorld
 		UI::divisionSelect(getString("division"), division, divisions,
 		                   sizeof(divisions) / sizeof(int));
 
+		//mod 添加LaneSnap选项
+		ImGui::SameLine();
+		int laneSnapModeInt = (uint8_t)laneSnapMode;
+		ImGui::SetNextItemWidth(125);
+		if (UI::inlineSelect(getString("lane_snap_mode"), laneSnapModeInt, laneSnapModes,
+			(size_t)LaneSnapMode::LaneSnapModeMax))
+		{
+			laneSnapMode = (LaneSnapMode)laneSnapModeInt;
+		}
+
 		ImGui::SameLine();
 		int snapModeInt = (uint8_t)snapMode;
 		ImGui::SetNextItemWidth(125);
@@ -871,6 +881,7 @@ namespace MikuMikuWorld
 		{
 			snapMode = (SnapMode)snapModeInt;
 		}
+
 
 		static int gotoMeasure = 0;
 		bool activated = false;
@@ -1626,7 +1637,10 @@ namespace MikuMikuWorld
 			int grabLane = std::clamp(positionToLane(ctrlMousePos.x), minLane, maxLane);
 			int diff = curLane - grabLane;
 
-			if (abs(diff) > 0)
+			//mod 完全基于鼠标移动的diff
+			float sizediff = positionToLane(mousePos.x) - positionToLane(ctrlMousePos.x);
+
+			if (abs(sizediff) > 0)
 			{
 				bool canResize = !std::any_of(
 				    context.selectedNotes.begin(), context.selectedNotes.end(),
@@ -1649,8 +1663,18 @@ namespace MikuMikuWorld
 					for (id_t id : context.selectedNotes)
 					{
 						Note& n = context.score.notes.at(id);
-						n.width = std::clamp(n.width - diff, (float)MIN_NOTE_WIDTH, maxNoteWidth);
-						n.lane = std::clamp(n.lane + diff, minLane, maxLane - n.width + 1);
+
+						// mod snap或者无轨模式
+						if (laneSnapMode == LaneSnapMode::Relative)
+						{
+							n.width = std::clamp(n.width - diff, (float)MIN_NOTE_WIDTH, maxNoteWidth);
+							n.lane = std::clamp(n.lane + diff, minLane, maxLane - n.width + 1);
+						}
+						else
+						{
+							n.width = std::fmax(0, n.width - sizediff);
+							n.lane = n.lane + sizediff;
+						}
 					}
 				}
 			}
@@ -1669,8 +1693,11 @@ namespace MikuMikuWorld
 			int grabTick = snapTickFromPos(-ctrlMousePos.y);
 
 			int laneDiff = curLane - grabLane;
+			//mod 完全基于鼠标移动的diff
+			float posDiff = positionToLane(mousePos.x) - positionToLane(ctrlMousePos.x);
 			// Move X
-			if (abs(laneDiff) > 0)
+			// 改为基于posDiff判断
+			if (abs(posDiff) > 0)
 			{
 				isMovingNote = true;
 				ctrlMousePos.x = mousePos.x;
@@ -1688,7 +1715,10 @@ namespace MikuMikuWorld
 					for (id_t id : context.selectedNotes)
 					{
 						Note& n = context.score.notes.at(id);
-						n.lane = std::clamp(n.lane + laneDiff, minLane, maxLane - n.width + 1);
+
+						//根据是否snap移动
+						if (laneSnapMode == LaneSnapMode::Relative)	n.lane = std::clamp(n.lane + laneDiff, minLane, maxLane - n.width + 1);
+						else n.lane = n.lane + posDiff;
 					}
 				}
 			}
@@ -1809,7 +1839,9 @@ namespace MikuMikuWorld
 			int curLane = positionToLane(mousePos.x);
 
 			int diff = curLane - grabLane;
-			if (abs(diff) > 0)
+			//mod 同上
+			float sizediff = positionToLane(mousePos.x) - positionToLane(ctrlMousePos.x);
+			if (abs(sizediff) > 0)
 			{
 				bool canResize = !std::any_of(
 				    context.selectedNotes.begin(), context.selectedNotes.end(),
@@ -1830,8 +1862,17 @@ namespace MikuMikuWorld
 					for (id_t id : context.selectedNotes)
 					{
 						Note& n = context.score.notes.at(id);
-						n.width = std::clamp(n.width + diff, (float)MIN_NOTE_WIDTH,
-						                     maxNoteWidth - n.lane);
+
+						//mod 同上
+						if (laneSnapMode == LaneSnapMode::Relative)
+						{
+							n.width = std::clamp(n.width + diff, (float)MIN_NOTE_WIDTH,
+								maxNoteWidth - n.lane);
+						}
+						else
+						{
+							n.width = std::fmax(0, n.width + sizediff);
+						}
 					}
 				}
 			}

@@ -168,10 +168,13 @@ division,%d Division
 division_affix,%d Division
 custom, Custom
 custom_division,Custom Division
-snap_mode,Snapping
-snap_mode_relative,Relative Snap
-snap_mode_absolute,Absolute Snap
-snap_mode_individual_absolute,Individual Absolute Snap
+snap_mode,Y - Snapping
+snap_mode_relative,Y - Relative Snap
+snap_mode_absolute,Y - Absolute Snap
+snap_mode_individual_absolute,Y - Individual Absolute Snap
+lane_snap_mode,X - Snapping
+no_snap,X - No Snapping
+lanesnap_mode_relative,X - Relative Snap
 zoom,Zoom
 show_step_outlines,Show Hold Mid Outlines
 draw_waveform,Show Waveform

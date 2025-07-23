@@ -55,8 +55,16 @@ namespace MikuMikuWorld
 		SnapModeMax
 	};
 
+	enum class LaneSnapMode : uint8_t
+	{
+		NoSnap,
+		Relative,
+		LaneSnapModeMax
+	};
+
 	constexpr const char* snapModes[]{ "snap_mode_relative", "snap_mode_absolute",
 		                               "snap_mode_individual_absolute" };
+	constexpr const char* laneSnapModes[]{ "no_snap", "lanesnap_mode_relative"};
 
 	constexpr int timeSignatureDenominators[]{ 2, 4, 8, 16, 32, 64 };
 

@@ -106,6 +106,8 @@ namespace MikuMikuWorld
 		int lastSelectedTick{};
 		int division = 8;
 		SnapMode snapMode = SnapMode::Relative;
+		//mod
+		LaneSnapMode laneSnapMode = LaneSnapMode::Relative;
 
 		bool mouseInTimeline{ false };
 		bool isHoveringNote{ false };
