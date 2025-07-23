@@ -1886,7 +1886,8 @@ namespace MikuMikuWorld
 	                                        bool isGuide, Renderer* renderer, const Color& tint_,
 	                                        const int offsetTick, const int offsetLane,
 	                                        const float startAlpha, const float endAlpha,
-	                                        const GuideColor guideColor, const int selectedLayer, const HoldEventType holdEventType)
+	                                        const GuideColor guideColor, const int selectedLayer, 
+											const HoldEventType holdEventType, const std::string guideColorInHex)
 	{
 		//int texIndex{ noteTextures.holdPath };
 		int texIndex{ noteTextures.guideColors };
@@ -1905,7 +1906,7 @@ namespace MikuMikuWorld
 		//const int sprIndex = isGuide ? static_cast<int>(guideColor) : n1.critical ? 3 : 1;
 		//mod
 		int sprIndex = 1;
-		if (isGuide) sprIndex = static_cast<int>(guideColor);
+		if (isGuide) sprIndex = 8;
 		else if (holdEventType == HoldEventType::Event_Laser) sprIndex = 5;
 		else if (holdEventType == HoldEventType::Event_Warning) sprIndex = 4;
 		else sprIndex = 0;
@@ -1952,13 +1953,22 @@ namespace MikuMikuWorld
 			if (y1 > size.y + size.y + position.y + 100)
 				break;
 
-			Color localTint =
-			    selectedLayer == -1
-			        ? noteTint
-			        : Color::lerp(n1.layer == selectedLayer ? noteTint : inactiveTint,
-			                      n2.layer == selectedLayer ? noteTint : inactiveTint, percent1);
+			// mod guildColor
+			Color localTint;
+			if (isGuide)
+			{
+				localTint = localTint.fromHex(guideColorInHex);
+			}
+			else
+			{
+				localTint =
+					selectedLayer == -1
+					? noteTint
+					: Color::lerp(n1.layer == selectedLayer ? noteTint : inactiveTint,
+						n2.layer == selectedLayer ? noteTint : inactiveTint, percent1);
 
-			localTint.a = tint.a * lerp(0.7, 1, lerp(startAlpha, endAlpha, percent1));
+				localTint.a = tint.a * lerp(0.7, 1, lerp(startAlpha, endAlpha, percent1));
+			}
 
 			Vector2 p1{ xl1, y1 };
 			Vector2 p2{ xl1 + holdSliceSize, y1 };
@@ -2045,7 +2055,7 @@ namespace MikuMikuWorld
 						a2 = 1 - p2;
 					}
 					drawHoldCurve(n1, n2, ease, note.isGuide(), renderer, tint, offsetTicks,
-					              offsetLane, a1, a2, note.guideColor, selectedLayer, note.holdEventType);
+					              offsetLane, a1, a2, note.guideColor, selectedLayer, note.holdEventType, note.colorInHex);
 
 					s1 = s2;
 				}
@@ -2073,7 +2083,7 @@ namespace MikuMikuWorld
 				const Note& n1 = s1 == -1 ? start : notes.at(note.steps[s1].ID);
 				const EaseType ease = s1 == -1 ? note.start.ease : note.steps[s1].ease;
 				drawHoldCurve(n1, end, ease, note.isGuide(), renderer, tint, offsetTicks,
-				              offsetLane, a1, a2, note.guideColor, selectedLayer, note.holdEventType);
+				              offsetLane, a1, a2, note.guideColor, selectedLayer, note.holdEventType, note.colorInHex);
 			}
 
 			s1 = -1;
@@ -2176,7 +2186,7 @@ namespace MikuMikuWorld
 				a2 = 0;
 			}
 			drawHoldCurve(start, end, note.start.ease, note.isGuide(), renderer, tint, offsetTicks,
-			              offsetLane, a1, a2, note.guideColor, selectedLayer, note.holdEventType);
+			              offsetLane, a1, a2, note.guideColor, selectedLayer, note.holdEventType, note.colorInHex);
 		}
 
 		auto inactiveTint = tint * otherLayerTint;
@@ -2972,6 +2982,8 @@ namespace MikuMikuWorld
 												  edit.holdEventType,
 												  edit.colorsetID,
 												  edit.highlight,
+												  edit.colorInHex,
+												  //mod end
 			                                      edit.fadeType,
 			                                      edit.colorType };
 		context.pushHistory("Insert hold", prev, context.score);

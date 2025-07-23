@@ -62,6 +62,32 @@ namespace MikuMikuWorld
 				          start.b + (end.b - start.b) * ratio,
 				          start.a + (end.a - start.a) * ratio };
 		}
+		
+		//mod HTML转Color
+		static inline Color fromHex(const std::string& hex, float alpha = 0.95f)
+		{
+			std::string processedHex = (hex[0] == '#') ? hex.substr(1) : hex;
+			Color color{ 1.0,1.0,1.0,1.0 };
+
+			if (processedHex.length() != 6) {
+				//throw std::invalid_argument("无效的十六进制颜色码，必须是6位。");
+				return color;
+			}
+
+			unsigned int r_int, g_int, b_int;
+
+			// 使用 sscanf 将十六进制字符串分段解析为整数
+			sscanf(processedHex.c_str(), "%02x%02x%02x", &r_int, &g_int, &b_int);
+
+			// 将 0-255 的整数范围归一化到 0.0-1.0 的浮点数范围
+			color.r = r_int / 255.0f;
+			color.g = g_int / 255.0f;
+			color.b = b_int / 255.0f;
+			color.a = alpha;
+
+			return color;
+		}
+
 	};
 
 	constexpr uint32_t roundUpToPowerOfTwo(uint32_t v)

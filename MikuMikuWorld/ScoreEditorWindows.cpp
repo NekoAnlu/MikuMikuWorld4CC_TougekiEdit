@@ -639,11 +639,14 @@ namespace MikuMikuWorld
 
 						if (isGuide)
 						{
-							edited |= UI::addSelectProperty(getString("guide_color"),
+							//mod 删掉fade_type和guide_color
+							/*edited |= UI::addSelectProperty(getString("guide_color"),
 							                                hold.guideColor, guideColorsForString,
 							                                arrayLength(guideColors));
 							edited |= UI::addSelectProperty(getString("fade_type"), hold.fadeType,
-							                                fadeTypes, arrayLength(fadeTypes));
+							                                fadeTypes, arrayLength(fadeTypes));*/
+							// mod 轨道加一个属性填写HTML
+							edited |= UI::addStringProperty(getString("color_html"), hold.colorInHex);
 						}
 						else
 						{

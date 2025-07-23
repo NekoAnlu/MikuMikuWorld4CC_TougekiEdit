@@ -287,3 +287,4 @@ event_laser,Laser
 event_colorset,Colorset
 colorset_index,Colorset Index
 colorset_highlight,Highlight
+color_html,HTML Color

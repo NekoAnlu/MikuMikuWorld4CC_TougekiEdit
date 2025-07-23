@@ -121,12 +121,13 @@ namespace MikuMikuWorld
 		ImGui::SetNextItemWidth(-1);
 	}
 
-	void UI::addStringProperty(const char* label, std::string& val)
+	bool UI::addStringProperty(const char* label, std::string& val)
 	{
 		propertyLabel(label);
 
-		ImGui::InputText(labelID(label), &val);
+		bool edited = ImGui::InputText(labelID(label), &val);
 		ImGui::NextColumn();
+		return edited;
 	}
 
 	bool UI::addIntProperty(const char* label, int& val, int lowerBound, int higherBound)

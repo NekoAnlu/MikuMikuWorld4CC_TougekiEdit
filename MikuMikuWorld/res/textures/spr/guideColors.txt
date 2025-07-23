@@ -14,3 +14,5 @@
 0,19,300,1
 #guide_color_7.png
 0,22,300,1
+#guide_color_8.png
+0,25,300,1

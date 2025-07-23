@@ -18,9 +18,10 @@ namespace MikuMikuWorld
 		FlickType flickType{ FlickType::Default };
 		HoldStepType stepType{ HoldStepType::Hidden };
 		EaseType easeType{ EaseType::Linear };
-		GuideColor colorType{ GuideColor::Green };
+		GuideColor colorType{ GuideColor::Black };
 		FadeType fadeType{ FadeType::None };
 		HoldEventType holdEventType{ HoldEventType::Event_Colorset };
+		std::string colorInHex{ "000000" };
 		int colorsetID{ 1 };
 		bool highlight{ false };
 
