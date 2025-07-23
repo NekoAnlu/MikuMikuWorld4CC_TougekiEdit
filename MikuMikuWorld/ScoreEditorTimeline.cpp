@@ -922,9 +922,24 @@ namespace MikuMikuWorld
 		                                  context.selectedLayer);
 		float speed = (hiSpeed == -1 ? 1.0f : context.score.hiSpeedChanges[hiSpeed].speed);
 
-		std::string rhythmString = IO::formatString(
+		/*std::string rhythmString = IO::formatString(
 		    "  %02d:%02d:%02d  |  %d/%d  |  %g BPM  |  %gx", (int)time / 60, (int)time % 60,
-		    (int)((time - (int)time) * 100), ts.numerator, ts.denominator, tempo.bpm, speed);
+		    (int)((time - (int)time) * 100), ts.numerator, ts.denominator, tempo.bpm, speed);*/
+		std::string rhythmString;
+		if (config.showTickInProperties)
+		{
+			rhythmString = IO::formatString(
+				"  %02d:%02d:%02d  |  %dt  |  %d/%d  |  %g BPM  |  %gx",
+				(int)time / 60, (int)time % 60, (int)((time - (int)time) * 100),
+				context.currentTick, ts.numerator, ts.denominator, tempo.bpm, speed);
+		}
+		else
+		{
+			rhythmString = IO::formatString(
+				"  %02d:%02d:%02d  |  %d/%d  |  %g BPM  |  %gx",
+				(int)time / 60, (int)time % 60, (int)((time - (int)time) * 100),
+				ts.numerator, ts.denominator, tempo.bpm, speed);
+		}
 
 		float _zoom = zoom;
 		int controlWidth = ImGui::GetContentRegionAvail().x -
@@ -1228,8 +1243,9 @@ namespace MikuMikuWorld
 			{
 				drawHoldCurve(inputNotes.holdStart, inputNotes.holdEnd, edit.easeType, false,
 				              renderer, hoverTint);
-				drawNote(inputNotes.holdStart, renderer, hoverTint);
-				drawNote(inputNotes.holdEnd, renderer, hoverTint);
+				//去掉首尾note
+				//drawNote(inputNotes.holdStart, renderer, hoverTint);
+				//drawNote(inputNotes.holdEnd, renderer, hoverTint);
 			}
 			else
 			{
@@ -1269,8 +1285,8 @@ namespace MikuMikuWorld
 					std::swap(a1, a2);
 				drawHoldCurve(inputNotes.holdStart, inputNotes.holdEnd, EaseType::Linear, true,
 				              renderer, noteTint, 1, 0, a1, a2, edit.colorType);
-				drawOutline(StepDrawData(inputNotes.holdStart, color));
-				drawOutline(StepDrawData(inputNotes.holdEnd, color));
+				//drawOutline(StepDrawData(inputNotes.holdStart, color));
+				//drawOutline(StepDrawData(inputNotes.holdEnd, color));
 			}
 			else
 			{
@@ -1653,6 +1669,7 @@ namespace MikuMikuWorld
 			int grabTick = snapTickFromPos(-ctrlMousePos.y);
 
 			int laneDiff = curLane - grabLane;
+			// Move X
 			if (abs(laneDiff) > 0)
 			{
 				isMovingNote = true;
@@ -1676,6 +1693,7 @@ namespace MikuMikuWorld
 				}
 			}
 
+			//Move Y
 			int tickDiff = hoverTick - grabTick;
 			if (abs(tickDiff) > 0)
 			{
@@ -1822,13 +1840,15 @@ namespace MikuMikuWorld
 		ImGui::PopID();
 	}
 
+	//mod 添加holdeventtype以便根据HoldType绘制
 	void ScoreEditorTimeline::drawHoldCurve(const Note& n1, const Note& n2, EaseType ease,
 	                                        bool isGuide, Renderer* renderer, const Color& tint_,
 	                                        const int offsetTick, const int offsetLane,
 	                                        const float startAlpha, const float endAlpha,
-	                                        const GuideColor guideColor, const int selectedLayer)
+	                                        const GuideColor guideColor, const int selectedLayer, const HoldEventType holdEventType)
 	{
-		int texIndex{ noteTextures.holdPath };
+		//int texIndex{ noteTextures.holdPath };
+		int texIndex{ noteTextures.guideColors };
 		ZIndex zIndex{ ZIndex::HoldLine };
 		if (isGuide)
 		{
@@ -1841,7 +1861,14 @@ namespace MikuMikuWorld
 
 		auto tint = tint_;
 		const Texture& pathTex = ResourceManager::textures[texIndex];
-		const int sprIndex = isGuide ? static_cast<int>(guideColor) : n1.critical ? 3 : 1;
+		//const int sprIndex = isGuide ? static_cast<int>(guideColor) : n1.critical ? 3 : 1;
+		//mod
+		int sprIndex = 1;
+		if (isGuide) sprIndex = static_cast<int>(guideColor);
+		else if (holdEventType == HoldEventType::Event_Laser) sprIndex = 5;
+		else if (holdEventType == HoldEventType::Event_Warning) sprIndex = 4;
+		else sprIndex = 0;
+
 		if (!isArrayIndexInBounds(sprIndex, pathTex.sprites))
 			return;
 
@@ -1977,7 +2004,7 @@ namespace MikuMikuWorld
 						a2 = 1 - p2;
 					}
 					drawHoldCurve(n1, n2, ease, note.isGuide(), renderer, tint, offsetTicks,
-					              offsetLane, a1, a2, note.guideColor, selectedLayer);
+					              offsetLane, a1, a2, note.guideColor, selectedLayer, note.holdEventType);
 
 					s1 = s2;
 				}
@@ -2005,7 +2032,7 @@ namespace MikuMikuWorld
 				const Note& n1 = s1 == -1 ? start : notes.at(note.steps[s1].ID);
 				const EaseType ease = s1 == -1 ? note.start.ease : note.steps[s1].ease;
 				drawHoldCurve(n1, end, ease, note.isGuide(), renderer, tint, offsetTicks,
-				              offsetLane, a1, a2, note.guideColor, selectedLayer);
+				              offsetLane, a1, a2, note.guideColor, selectedLayer, note.holdEventType);
 			}
 
 			s1 = -1;
@@ -2108,7 +2135,7 @@ namespace MikuMikuWorld
 				a2 = 0;
 			}
 			drawHoldCurve(start, end, note.start.ease, note.isGuide(), renderer, tint, offsetTicks,
-			              offsetLane, a1, a2, note.guideColor, selectedLayer);
+			              offsetLane, a1, a2, note.guideColor, selectedLayer, note.holdEventType);
 		}
 
 		auto inactiveTint = tint * otherLayerTint;
@@ -2117,14 +2144,19 @@ namespace MikuMikuWorld
 		{
 			if (note.startType == HoldNoteType::Normal)
 			{
-				drawNote(
+				// 去掉Hold首尾的绘制
+				/*drawNote(
 				    start, renderer,
 				    (selectedLayer == -1 || start.layer == selectedLayer) ? tint : inactiveTint,
-				    offsetTicks, offsetLane, selectedLayer == -1 || start.layer == selectedLayer);
+				    offsetTicks, offsetLane, selectedLayer == -1 || start.layer == selectedLayer);*/
+				//画空心框
+				StepDrawType drawType = StepDrawType::SkipStep;
+				drawSteps.push_back({ start.tick + offsetTicks, start.lane + (float)offsetLane,
+									  start.width, drawType, start.layer });
 			}
 			else if (drawHoldStepOutlines)
 			{
-				StepDrawType drawType;
+				/*StepDrawType drawType;
 				if (note.startType == HoldNoteType::Guide)
 				{
 					drawType =
@@ -2137,7 +2169,10 @@ namespace MikuMikuWorld
 					                          : StepDrawType::InvisibleHold;
 				}
 				drawSteps.push_back({ start.tick + offsetTicks, start.lane + (float)offsetLane,
-				                      start.width, drawType, start.layer });
+				                      start.width, drawType, start.layer });*/
+				StepDrawType drawType = StepDrawType::SkipStep;
+				drawSteps.push_back({ start.tick + offsetTicks, start.lane + (float)offsetLane,
+									  start.width, drawType, start.layer });
 			}
 		}
 
@@ -2145,15 +2180,19 @@ namespace MikuMikuWorld
 		{
 			if (note.endType == HoldNoteType::Normal)
 			{
-				drawNote(end, renderer,
+				// 去掉Hold首尾的绘制
+				/*drawNote(end, renderer,
 				         (selectedLayer == -1 || end.layer == selectedLayer) ? tint : inactiveTint,
 				         offsetTicks, offsetLane,
-				         selectedLayer == -1 || start.layer == selectedLayer);
+				         selectedLayer == -1 || start.layer == selectedLayer);*/
+				StepDrawType drawType = StepDrawType::SkipStep;
+				drawSteps.push_back({ end.tick + offsetTicks, end.lane + (float)offsetLane,
+									  end.width, drawType, end.layer });
 			}
 			else if (drawHoldStepOutlines)
 			{
-				StepDrawType drawType;
-				if (note.startType == HoldNoteType::Guide)
+				//StepDrawType drawType;
+				/*if (note.startType == HoldNoteType::Guide)
 				{
 					drawType =
 					    static_cast<StepDrawType>(static_cast<int>(StepDrawType::GuideNeutral) +
@@ -2163,7 +2202,8 @@ namespace MikuMikuWorld
 				{
 					drawType = start.critical ? StepDrawType::InvisibleHoldCritical
 					                          : StepDrawType::InvisibleHold;
-				}
+				}*/
+				StepDrawType drawType = StepDrawType::SkipStep;
 				drawSteps.push_back({ end.tick + offsetTicks, end.lane + (float)offsetLane,
 				                      end.width, drawType, end.layer });
 			}
@@ -2274,13 +2314,16 @@ namespace MikuMikuWorld
 		                     arrowS.getY(), arrowS.getY() + arrowS.getHeight(), tint, 2);
 	}
 
+	/// <summary>
+	/// 绘制Note用
+	/// </summary>
 	void ScoreEditorTimeline::drawNote(const Note& note, Renderer* renderer, const Color& tint,
-	                                   const int offsetTick, const int offsetLane,
-	                                   const bool selectedLayer)
+		const int offsetTick, const int offsetLane,
+		const bool selectedLayer)
 	{
 		if (noteTextures.notes == -1)
 			return;
-		
+
 		int texName = -1;
 		int sprIndex = -1;
 
@@ -2290,7 +2333,7 @@ namespace MikuMikuWorld
 			texName = noteTextures.notes;
 			sprIndex = getNoteSpriteIndex(note);
 		}
-		else if (!note.critical&& note.flick == FlickType::None)
+		else if (!note.critical && note.flick == FlickType::None)
 		{
 			texName = noteTextures.bell;
 			sprIndex = 0;
@@ -2329,12 +2372,12 @@ namespace MikuMikuWorld
 
 
 		Vector2 pos{ laneToPosition(note.lane + offsetLane),
-			         getNoteYPosFromTick(note.tick + offsetTick) };
+					 getNoteYPosFromTick(note.tick + offsetTick) };
 		const Vector2 sliceSz(notesSliceSize, notesHeight);
 		const AnchorType anchor = AnchorType::MiddleLeft;
 
 		const float midLen =
-		    std::max(0.0f, (laneWidth * note.width) - (sliceSz.x * 2) + noteOffsetX + 5);
+			std::max(0.0f, (laneWidth * note.width) - (sliceSz.x * 2) + noteOffsetX + 5);
 		const Vector2 midSz{ midLen, notesHeight };
 
 		pos.x -= noteOffsetX;
@@ -2347,7 +2390,7 @@ namespace MikuMikuWorld
 		if (note.getType() == NoteType::Tap && !note.isFlick())
 		{
 			Vector2 pos{ laneToPosition(note.lane), getNoteYPosFromTick(note.tick + offsetTick) };
-			renderer->drawSprite(pos, 0.0f, Vector2(40,40), AnchorType::MiddleCenter, tex, 0 ,tint, z);
+			renderer->drawSprite(pos, 0.0f, Vector2(40, 40), AnchorType::MiddleCenter, tex, 0, tint, z);
 		}
 		// 普通圆形弹幕同上
 		else if (note.getType() == NoteType::Damage && note.damageType == DamageType::Circle)
@@ -2386,16 +2429,29 @@ namespace MikuMikuWorld
 
 				// diamond is always centered
 				pos.x = midpoint(laneToPosition(note.lane + offsetLane),
-				                 laneToPosition(note.lane + offsetLane + note.width));
+					laneToPosition(note.lane + offsetLane + note.width));
 				renderer->drawSprite(
-				    pos, 0.0f, nodeSz, AnchorType::MiddleCenter, tex, frictionSpr.getX(),
-				    frictionSpr.getX() + frictionSpr.getWidth(), frictionSpr.getY(),
-				    frictionSpr.getY() + frictionSpr.getHeight(), tint, z + 1);
+					pos, 0.0f, nodeSz, AnchorType::MiddleCenter, tex, frictionSpr.getX(),
+					frictionSpr.getX() + frictionSpr.getWidth(), frictionSpr.getY(),
+					frictionSpr.getY() + frictionSpr.getHeight(), tint, z + 1);
 			}
 		}
 
 		if (note.isFlick())
 			drawFlickArrow(note, renderer, tint, offsetTick, offsetLane);
+
+
+		//-------------------------------------------------- By Cursor 绘制text 不为1时绘制
+
+		if (note.extraSpeed != 1)
+		{
+			std::string extraSpeedStr = IO::formatString("%.2fx", note.extraSpeed);
+
+			float textX = position.x + laneToPosition(note.lane + offsetLane + note.width) - ImGui::CalcTextSize(extraSpeedStr.c_str()).x + 20;
+			float textY = position.y - tickToPosition(note.tick + offsetTick) + visualOffset - (notesHeight * 0.5f) + 15;
+
+			ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 15.0f, ImVec2(textX, textY), ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)), extraSpeedStr.c_str());
+		}
 	}
 
 	void ScoreEditorTimeline::drawCcNote(const Note& note, Renderer* renderer, const Color& tint,
@@ -2505,6 +2561,18 @@ namespace MikuMikuWorld
 
 		if (note.isFlick())
 			drawFlickArrow(note, renderer, tint, offsetTick, offsetLane);
+
+		//-------------------------------------------------- By Cursor 绘制text 不为1时绘制
+
+		if (note.extraSpeed != 1)
+		{
+			std::string extraSpeedStr = IO::formatString("%.2fx", note.extraSpeed);
+
+			float textX = position.x + laneToPosition(note.lane + offsetLane + note.width) - ImGui::CalcTextSize(extraSpeedStr.c_str()).x + 20;
+			float textY = position.y - tickToPosition(note.tick + offsetTick) + visualOffset - (notesHeight * 0.5f) + 15;
+
+			ImGui::GetWindowDrawList()->AddText(ImGui::GetFont(), 15.0f, ImVec2(textX, textY), ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f)), extraSpeedStr.c_str());
+		}
 	}
 
 	bool ScoreEditorTimeline::bpmControl(const Score& score, const Tempo& tempo)

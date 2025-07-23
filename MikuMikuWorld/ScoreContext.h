@@ -16,10 +16,10 @@ namespace MikuMikuWorld
 	{
 		int noteWidth{ 2 };
 		FlickType flickType{ FlickType::Default };
-		HoldStepType stepType{ HoldStepType::Normal };
+		HoldStepType stepType{ HoldStepType::Hidden };
 		EaseType easeType{ EaseType::Linear };
 		GuideColor colorType{ GuideColor::Green };
-		FadeType fadeType{ FadeType::Out };
+		FadeType fadeType{ FadeType::None };
 		HoldEventType holdEventType{ HoldEventType::Event_Colorset };
 		int colorsetID{ 1 };
 		bool highlight{ false };

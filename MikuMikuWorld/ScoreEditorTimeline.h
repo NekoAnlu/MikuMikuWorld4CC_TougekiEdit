@@ -180,7 +180,7 @@ namespace MikuMikuWorld
 		                   const int offsetLane = 0, const float startAlpha = 1,
 		                   const float endAlpha = 1,
 		                   const GuideColor guideColor = GuideColor::Green,
-		                   const int selectedLayer = -1);
+		                   const int selectedLayer = -1, const HoldEventType holdEventType = HoldEventType::Event_Colorset);
 		void drawHoldNote(const std::unordered_map<id_t, Note>& notes, const HoldNote& note,
 		                  Renderer* renderer, const Color& tint, const int selectedLayer = -1,
 		                  const int offsetTicks = 0, const int offsetLane = 0);

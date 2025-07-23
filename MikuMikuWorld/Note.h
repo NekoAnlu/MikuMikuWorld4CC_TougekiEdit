@@ -146,6 +146,18 @@ namespace MikuMikuWorld
 			return startType == HoldNoteType::Guide || endType == HoldNoteType::Guide;
 		}
 
+		// mod
+		constexpr bool isLaser() const
+		{
+			return holdEventType == HoldEventType::Event_Laser;
+		}
+
+		// mod
+		constexpr bool isWarning() const
+		{
+			return holdEventType == HoldEventType::Event_Warning;
+		}
+
 		/**
 		 * @brief Retrieve HoldStep according to given `index` within `[-1, steps.size()-1]`,
 		 *        where -1 stands for the start step

@@ -98,6 +98,13 @@ namespace MikuMikuWorld
 		return pressed;
 	}
 
+	//mod ªÊ÷∆text
+	void UI::labelText(const char* txt, ImVec2 pos, ImVec2 size)
+	{
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.15f, 0.15f, 0.15f, 1.0));
+		//ImGui::LabelText(txt,)
+	}
+
 	bool UI::isAnyPopupOpen()
 	{
 		return ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId | ImGuiPopupFlags_AnyPopupLevel);
