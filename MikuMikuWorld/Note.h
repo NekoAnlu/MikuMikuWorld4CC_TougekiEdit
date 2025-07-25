@@ -136,7 +136,7 @@ namespace MikuMikuWorld
 		HoldEventType holdEventType{};
 		int colorsetID;
 		bool highlight;
-		std::string colorInHex{ "000000" };
+		std::string colorInHex{ "#000000" };
 		// mod end
 
 		FadeType fadeType{ FadeType::Out };

@@ -94,6 +94,13 @@ namespace MikuMikuWorld
 		                  MAX_LANE - width + 1 + score.metadata.laneExtension);
 	}
 
+	//mod 无轨用
+	float ScoreEditorTimeline::laneFromCenterPosition(const Score& score, float lane, int width)
+	{
+		return std::clamp(lane - (width / 2), (float)MIN_LANE - score.metadata.laneExtension,
+			(float)MAX_LANE - width + 1 + score.metadata.laneExtension);
+	}
+
 	void ScoreEditorTimeline::focusCursor(ScoreContext& context, Direction direction)
 	{
 		float cursorY = tickToPosition(context.currentTick);
@@ -1122,8 +1129,8 @@ namespace MikuMikuWorld
 	void ScoreEditorTimeline::previewPaste(ScoreContext& context, Renderer* renderer)
 	{
 		context.pasteData.offsetLane =
-		    std::clamp(hoverLane - context.pasteData.midLane, context.pasteData.minLaneOffset,
-		               context.pasteData.maxLaneOffset);
+		    std::clamp(hoverLane - context.pasteData.midLane, (float)context.pasteData.minLaneOffset,
+				(float)context.pasteData.maxLaneOffset);
 
 		for (const auto notes : { context.pasteData.notes, context.pasteData.damages })
 			for (const auto& [_, note] : notes)
@@ -1154,11 +1161,19 @@ namespace MikuMikuWorld
 	/// <param name="edit"></param>
 	void ScoreEditorTimeline::updateInputNotes(const Score& score, EditArgs& edit)
 	{
-		int lane = laneFromCenterPosition(score, hoverLane, edit.noteWidth);
+		//mod 如果为无轨模式则不取整
+		float lane = laneFromCenterPosition(score, hoverLane, edit.noteWidth);
+		if (laneSnapMode == LaneSnapMode::Relative)
+		{
+			lane = std::floorf(lane);
+		}
+
+		//int lane = laneFromCenterPosition(score, hoverLane, edit.noteWidth);
+
 		int width = edit.noteWidth;
 		int tick = hoverTick;
-		//mod 直接限制死普通tap宽度为1
 		inputNotes.tap.lane = lane + 1;
+		//mod 直接限制死普通tap宽度为1
 		inputNotes.tap.width = 1;
 		inputNotes.tap.tick = tick;
 		inputNotes.tap.flick =
@@ -1957,7 +1972,16 @@ namespace MikuMikuWorld
 			Color localTint;
 			if (isGuide)
 			{
-				localTint = localTint.fromHex(guideColorInHex);
+
+				Color color = localTint.fromHex(guideColorInHex);
+
+				localTint =
+					selectedLayer == -1
+					? color
+					: (n1.layer == selectedLayer ? color: color * inactiveTint,
+						n2.layer == selectedLayer ? color: color * inactiveTint);
+
+				//localTint.a = tint.a;
 			}
 			else
 			{

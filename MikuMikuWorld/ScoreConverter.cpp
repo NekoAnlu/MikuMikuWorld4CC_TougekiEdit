@@ -1312,11 +1312,12 @@ namespace MikuMikuWorld
 			{
 				// 获取hold头的layer
 				obj["layer"] = score.notes.at(note.start.ID).layer;
-				obj["datamodel"] = "spawn_rail";
+				//obj["datamodel"] = "spawn_rail";
 				auto& start = score.notes.at(note.start.ID);
 				//obj["color"] = guideColors[(int)note.guideColor];
 				//默认轨道的独立速度为LN头的速度
 				obj["extraspeed"] = start.extraSpeed;
+				obj["color"] = note.colorInHex;
 				/*obj["fade"] = note.fadeType == FadeType::None ? "none"
 					: note.fadeType == FadeType::In ? "in"
 					: "out";*/
@@ -1362,7 +1363,7 @@ namespace MikuMikuWorld
 			{
 				obj["layer"] = score.notes.at(note.start.ID).layer;
 				// Hold只作为事件处理
-				obj["datamodel"] = "tigger_event";
+				//obj["datamodel"] = "tigger_event";
 				// 只考虑开头结尾
 				auto& start = score.notes.at(note.start.ID);
 				auto& end = score.notes.at(note.end);
@@ -1385,7 +1386,7 @@ namespace MikuMikuWorld
 			else
 			{
 				obj["layer"] = score.notes.at(note.start.ID).layer;
-				obj["datamodel"] = "trigger_laser";
+				//obj["datamodel"] = "trigger_laser";
 				obj["type"] = note.holdEventType;
 
 				auto& start = score.notes.at(note.start.ID);
@@ -1524,65 +1525,65 @@ namespace MikuMikuWorld
 		for (const auto& obj : root["rails"])
 		{
 			int layer = obj["layer"].get<int>();
-			if (obj["datamodel"] == "spawn_rail")
+			
+			HoldNote hold;
+			hold.startType = HoldNoteType::Guide;
+			hold.endType = HoldNoteType::Guide;
+			hold.colorInHex = obj["color"];
+
+			const auto& points = obj["midpoints"];
+			float extraSpeed = obj["extraspeed"].get<float>();
+
+			// 处理起始点
+			const auto& startPoint = points[0];
+			Note startNote(NoteType::Hold);
+			startNote.tick = startPoint["beat"].get<double>() * TICKS_PER_BEAT;
+			startNote.lane = startPoint["track"].get<float>();
+			startNote.width = startPoint["width"].get<float>();
+			startNote.extraSpeed = extraSpeed;
+			startNote.ID = Note::getNextID();
+			startNote.layer = layer;
+			score.notes[startNote.ID] = startNote;
+
+			hold.start.ID = startNote.ID;
+			hold.start.ease = getEaseTypeFromString(startPoint["ease"].get<std::string>());
+
+			// 处理中间点
+			for (size_t i = 1; i < points.size() - 1; i++)
 			{
-				HoldNote hold;
-				hold.startType = HoldNoteType::Guide;
-				hold.endType = HoldNoteType::Guide;
+				const auto& point = points[i];
+				Note midNote(NoteType::HoldMid);
+				midNote.tick = point["beat"].get<double>() * TICKS_PER_BEAT;
+				midNote.lane = point["track"].get<float>();
+				midNote.width = point["width"].get<float>();
+				midNote.extraSpeed = extraSpeed;
+				midNote.ID = Note::getNextID();
+				midNote.parentID = startNote.ID;
+				midNote.layer = layer;
+				score.notes[midNote.ID] = midNote;
 
-				const auto& points = obj["midpoints"];
-				float extraSpeed = obj["extraspeed"].get<float>();
-
-				// 处理起始点
-				const auto& startPoint = points[0];
-				Note startNote(NoteType::Hold);
-				startNote.tick = startPoint["beat"].get<double>() * TICKS_PER_BEAT;
-				startNote.lane = startPoint["track"].get<float>();
-				startNote.width = startPoint["width"].get<float>();
-				startNote.extraSpeed = extraSpeed;
-				startNote.ID = Note::getNextID();
-				startNote.layer = layer;
-				score.notes[startNote.ID] = startNote;
-
-				hold.start.ID = startNote.ID;
-				hold.start.ease = getEaseTypeFromString(startPoint["ease"].get<std::string>());
-
-				// 处理中间点
-				for (size_t i = 1; i < points.size() - 1; i++)
-				{
-					const auto& point = points[i];
-					Note midNote(NoteType::HoldMid);
-					midNote.tick = point["beat"].get<double>() * TICKS_PER_BEAT;
-					midNote.lane = point["track"].get<float>();
-					midNote.width = point["width"].get<float>();
-					midNote.extraSpeed = extraSpeed;
-					midNote.ID = Note::getNextID();
-					midNote.parentID = startNote.ID;
-					midNote.layer = layer;
-					score.notes[midNote.ID] = midNote;
-
-					HoldStep step;
-					step.ID = midNote.ID;
-					step.type = HoldStepType::Hidden;
-					step.ease = getEaseTypeFromString(point["ease"].get<std::string>());
-					hold.steps.push_back(step);
-				}
-
-				// 处理结束点
-				const auto& endPoint = points[points.size() - 1];
-				Note endNote(NoteType::HoldEnd);
-				endNote.tick = endPoint["beat"].get<double>() * TICKS_PER_BEAT;
-				endNote.lane = endPoint["track"].get<float>();
-				endNote.width = endPoint["width"].get<float>();
-				endNote.extraSpeed = extraSpeed;
-				endNote.ID = Note::getNextID();
-				endNote.parentID = startNote.ID;
-				endNote.layer = layer;
-				score.notes[endNote.ID] = endNote;
-				hold.end = endNote.ID;
-
-				score.holdNotes[startNote.ID] = hold;
+				HoldStep step;
+				step.ID = midNote.ID;
+				step.type = HoldStepType::Hidden;
+				step.ease = getEaseTypeFromString(point["ease"].get<std::string>());
+				hold.steps.push_back(step);
 			}
+
+			// 处理结束点
+			const auto& endPoint = points[points.size() - 1];
+			Note endNote(NoteType::HoldEnd);
+			endNote.tick = endPoint["beat"].get<double>() * TICKS_PER_BEAT;
+			endNote.lane = endPoint["track"].get<float>();
+			endNote.width = endPoint["width"].get<float>();
+			endNote.extraSpeed = extraSpeed;
+			endNote.ID = Note::getNextID();
+			endNote.parentID = startNote.ID;
+			endNote.layer = layer;
+			score.notes[endNote.ID] = endNote;
+			hold.end = endNote.ID;
+
+			score.holdNotes[startNote.ID] = hold;
+			
 		}
 
 
@@ -1590,100 +1591,98 @@ namespace MikuMikuWorld
 		for (const auto& obj : root["laser"])
 		{
 			int layer = obj["layer"].get<int>();
-			if (obj["datamodel"] == "tigger_laser")
+			
+			HoldNote hold;
+			hold.holdEventType = static_cast<HoldEventType>(obj["type"].get<int>());
+
+			const auto& points = obj["midpoints"];
+			//float extraSpeed = obj["extraspeed"].get<float>();
+
+			// 处理起始点
+			const auto& startPoint = points[0];
+			Note startNote(NoteType::Hold);
+			startNote.tick = startPoint["beat"].get<double>() * TICKS_PER_BEAT;
+			startNote.lane = startPoint["track"].get<float>();
+			startNote.width = startPoint["width"].get<float>();
+			//startNote.extraSpeed = extraSpeed;
+			startNote.layer = layer;
+			startNote.ID = Note::getNextID();
+			score.notes[startNote.ID] = startNote;
+
+			hold.start.ID = startNote.ID;
+			hold.start.ease = getEaseTypeFromString(startPoint["ease"].get<std::string>());
+
+			// 处理中间点
+			for (size_t i = 1; i < points.size() - 1; i++)
 			{
-				HoldNote hold;
-				hold.holdEventType = static_cast<HoldEventType>(obj["type"].get<int>());
+				const auto& point = points[i];
+				Note midNote(NoteType::HoldMid);
+				midNote.tick = point["beat"].get<double>() * TICKS_PER_BEAT;
+				midNote.lane = point["track"].get<float>();
+				midNote.width = point["width"].get<float>();
+				//midNote.extraSpeed = extraSpeed;
+				midNote.ID = Note::getNextID();
+				midNote.parentID = startNote.ID;
+				midNote.layer = layer;
+				score.notes[midNote.ID] = midNote;
 
-				const auto& points = obj["midpoints"];
-				//float extraSpeed = obj["extraspeed"].get<float>();
-
-				// 处理起始点
-				const auto& startPoint = points[0];
-				Note startNote(NoteType::Hold);
-				startNote.tick = startPoint["beat"].get<double>() * TICKS_PER_BEAT;
-				startNote.lane = startPoint["track"].get<float>();
-				startNote.width = startPoint["width"].get<float>();
-				//startNote.extraSpeed = extraSpeed;
-				startNote.layer = layer;
-				startNote.ID = Note::getNextID();
-				score.notes[startNote.ID] = startNote;
-
-				hold.start.ID = startNote.ID;
-				hold.start.ease = getEaseTypeFromString(startPoint["ease"].get<std::string>());
-
-				// 处理中间点
-				for (size_t i = 1; i < points.size() - 1; i++)
-				{
-					const auto& point = points[i];
-					Note midNote(NoteType::HoldMid);
-					midNote.tick = point["beat"].get<double>() * TICKS_PER_BEAT;
-					midNote.lane = point["track"].get<float>();
-					midNote.width = point["width"].get<float>();
-					//midNote.extraSpeed = extraSpeed;
-					midNote.ID = Note::getNextID();
-					midNote.parentID = startNote.ID;
-					midNote.layer = layer;
-					score.notes[midNote.ID] = midNote;
-
-					HoldStep step;
-					step.ID = midNote.ID;
-					step.type = HoldStepType::Hidden;
-					step.ease = getEaseTypeFromString(point["ease"].get<std::string>());
-					hold.steps.push_back(step);
-				}
-
-				// 处理结束点
-				const auto& endPoint = points[points.size() - 1];
-				Note endNote(NoteType::HoldEnd);
-				endNote.tick = endPoint["beat"].get<double>() * TICKS_PER_BEAT;
-				endNote.lane = endPoint["track"].get<float>();
-				endNote.width = endPoint["width"].get<float>();
-				//endNote.extraSpeed = extraSpeed;
-				endNote.ID = Note::getNextID();
-				endNote.parentID = startNote.ID;
-				endNote.layer = layer;
-				score.notes[endNote.ID] = endNote;
-				hold.end = endNote.ID;
-
-				score.holdNotes[startNote.ID] = hold;
+				HoldStep step;
+				step.ID = midNote.ID;
+				step.type = HoldStepType::Hidden;
+				step.ease = getEaseTypeFromString(point["ease"].get<std::string>());
+				hold.steps.push_back(step);
 			}
+
+			// 处理结束点
+			const auto& endPoint = points[points.size() - 1];
+			Note endNote(NoteType::HoldEnd);
+			endNote.tick = endPoint["beat"].get<double>() * TICKS_PER_BEAT;
+			endNote.lane = endPoint["track"].get<float>();
+			endNote.width = endPoint["width"].get<float>();
+			//endNote.extraSpeed = extraSpeed;
+			endNote.ID = Note::getNextID();
+			endNote.parentID = startNote.ID;
+			endNote.layer = layer;
+			score.notes[endNote.ID] = endNote;
+			hold.end = endNote.ID;
+
+			score.holdNotes[startNote.ID] = hold;
+			
 		}
 
 		// 6. 处理事件
 		for (const auto& obj : root["events"])
 		{
 			int layer = obj["layer"].get<int>();
-			if (obj["datamodel"] == "tigger_event")
-			{
-				HoldNote hold;
-				hold.holdEventType = static_cast<HoldEventType>(obj["type"].get<int>());
+			
+			HoldNote hold;
+			hold.holdEventType = static_cast<HoldEventType>(obj["type"].get<int>());
 
-				// 创建开始音符
-				Note startNote(NoteType::Hold);
-				Note endNote(NoteType::HoldEnd);
-				startNote.tick = obj["beat"].get<double>() * TICKS_PER_BEAT;
-				startNote.lane = obj["track"].get<float>();
-				startNote.width = obj["width"].get<float>();
-				startNote.layer = layer;
-				startNote.ID = Note::getNextID();
-				score.notes[startNote.ID] = startNote;
+			// 创建开始音符
+			Note startNote(NoteType::Hold);
+			Note endNote(NoteType::HoldEnd);
+			startNote.tick = obj["beat"].get<double>() * TICKS_PER_BEAT;
+			startNote.lane = obj["track"].get<float>();
+			startNote.width = obj["width"].get<float>();
+			startNote.layer = layer;
+			startNote.ID = Note::getNextID();
+			score.notes[startNote.ID] = startNote;
 				
-				endNote.tick = obj["endbeat"].get<double>() * TICKS_PER_BEAT;
-				endNote.lane = obj["track"].get<float>();
-				endNote.width = obj["width"].get<float>();
-				endNote.layer = layer;
-				endNote.ID = Note::getNextID();
-				endNote.parentID = startNote.ID;
+			endNote.tick = obj["endbeat"].get<double>() * TICKS_PER_BEAT;
+			endNote.lane = obj["track"].get<float>();
+			endNote.width = obj["width"].get<float>();
+			endNote.layer = layer;
+			endNote.ID = Note::getNextID();
+			endNote.parentID = startNote.ID;
 				
-				score.notes[endNote.ID] = endNote;
-				hold.start.ID = startNote.ID;
-				hold.end = endNote.ID;
-				hold.colorsetID = obj["colorsetID"].get<int>();
-				hold.highlight = obj["highlight"].get<int>() == 1;
+			score.notes[endNote.ID] = endNote;
+			hold.start.ID = startNote.ID;
+			hold.end = endNote.ID;
+			hold.colorsetID = obj["colorsetID"].get<int>();
+			hold.highlight = obj["highlight"].get<int>() == 1;
 
-				score.holdNotes[startNote.ID] = hold;
-			}
+			score.holdNotes[startNote.ID] = hold;
+			
 		}
 
 		// 7. 确保至少有一个默认层

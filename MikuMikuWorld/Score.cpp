@@ -346,6 +346,7 @@ namespace MikuMikuWorld
 				hold.holdEventType = (HoldEventType)reader.readUInt32();
 				hold.colorsetID = reader.readUInt32();
 			    hold.highlight = (bool)reader.readUInt32();
+				hold.colorInHex = (std::string)reader.readString();
 			}
 
 			score.notes[start.ID] = start;
@@ -422,6 +423,11 @@ namespace MikuMikuWorld
 		return score;
 	}
 
+	/// <summary>
+	/// mmw保存函数 添加完新属性后需要在这里添加以正常保存
+	/// </summary>
+	/// <param name="score"></param>
+	/// <param name="filename"></param>
 	void serializeScore(const Score& score, const std::string& filename)
 	{
 		BinaryWriter writer(filename);
@@ -488,10 +494,11 @@ namespace MikuMikuWorld
 			writer.writeInt32((int)hold.fadeType);
 			writer.writeInt32((int)hold.guideColor);
 
-			// mod +LN特殊类型 HoldEventType colorsetID highlight
+			// mod +LN特殊类型 HoldEventType colorsetID highlight color
 			writer.writeInt32((int)hold.holdEventType);
 			writer.writeInt32((int)hold.colorsetID);
 			writer.writeInt32((int)hold.highlight);
+			writer.writeString((std::string)hold.colorInHex);
 
 			// steps
 			int stepCount = hold.steps.size();

@@ -66,8 +66,9 @@ namespace MikuMikuWorld
 		//mod HTML转Color
 		static inline Color fromHex(const std::string& hex, float alpha = 0.95f)
 		{
-			std::string processedHex = (hex[0] == '#') ? hex.substr(1) : hex;
 			Color color{ 1.0,1.0,1.0,1.0 };
+			if (hex[0] != '#') return color;
+			std::string processedHex = (hex[0] == '#') ? hex.substr(1) : hex;
 
 			if (processedHex.length() != 6) {
 				//throw std::invalid_argument("无效的十六进制颜色码，必须是6位。");

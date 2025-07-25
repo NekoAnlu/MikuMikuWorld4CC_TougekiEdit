@@ -97,7 +97,7 @@ namespace MikuMikuWorld
 		static constexpr float maxPlaybackSpeed = 1.00f;
 
 		float minNoteYDistance{};
-		int hoverLane{};
+		float hoverLane{};
 		int hoverTick{};
 		id_t hoveringNote{};
 		id_t holdingNote{};
@@ -257,6 +257,7 @@ namespace MikuMikuWorld
 		float getNoteYPosFromTick(int tick) const;
 
 		int laneFromCenterPosition(const Score& score, int lane, int width);
+		float laneFromCenterPosition(const Score& score, float lane, int width);
 		float positionToLane(float pos) const;
 		float laneToPosition(float lane) const;
 
