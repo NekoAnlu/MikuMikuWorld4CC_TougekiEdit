@@ -947,15 +947,15 @@ namespace MikuMikuWorld
 		if (config.showTickInProperties)
 		{
 			rhythmString = IO::formatString(
-				"  %02d:%02d:%02d  |  %dt  |  %d/%d  |  %g BPM  |  %gx",
-				(int)time / 60, (int)time % 60, (int)((time - (int)time) * 100),
+				"  %02d:%02d:%03d  |  %dt  |  %d/%d  |  %g BPM  |  %gx",
+				(int)time / 60, (int)time % 60, (int)((time - (int)time) * 1000),
 				context.currentTick, ts.numerator, ts.denominator, tempo.bpm, speed);
 		}
 		else
 		{
 			rhythmString = IO::formatString(
-				"  %02d:%02d:%02d  |  %d/%d  |  %g BPM  |  %gx",
-				(int)time / 60, (int)time % 60, (int)((time - (int)time) * 100),
+				"  %02d:%02d:%03d  |  %d/%d  |  %g BPM  |  %gx",
+				(int)time / 60, (int)time % 60, (int)((time - (int)time) * 1000),
 				ts.numerator, ts.denominator, tempo.bpm, speed);
 		}
 

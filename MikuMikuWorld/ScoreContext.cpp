@@ -522,6 +522,7 @@ namespace MikuMikuWorld
 			}
 		}
 
+		//Mod Hold处理不在JsonIO中而在这
 		if (jsonIO::arrayHasData(data, "holds"))
 		{
 			for (const auto& entry : data["holds"])
@@ -549,6 +550,13 @@ namespace MikuMikuWorld
 					           (EaseType)findArrayItem(startEase.c_str(), easeTypes,
 					                                   arrayLength(easeTypes)) };
 				hold.end = end.ID;
+				
+				//mod属性读取
+				hold.holdEventType = (HoldEventType)jsonIO::tryGetValue<int>(entry, "holdEventType", 0);
+				hold.colorsetID = jsonIO::tryGetValue<int>(entry, "colorsetID", 0);
+				hold.highlight = jsonIO::tryGetValue<int>(entry, "highlight", 0) == 1 ? true : false;
+				hold.colorInHex = jsonIO::tryGetValue<std::string>(entry, "colorInHex", "#000000");
+
 				for (int i = 0; i < arrayLength(fadeTypes); ++i)
 				{
 					if (entry["fade"] == fadeTypes[i])

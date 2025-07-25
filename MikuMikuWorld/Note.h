@@ -132,7 +132,7 @@ namespace MikuMikuWorld
 		HoldNoteType startType{};
 		HoldNoteType endType{};
 
-		// mod Hold当event额外属性
+		// mod Hold当event额外属性且都是公共的
 		HoldEventType holdEventType{};
 		int colorsetID;
 		bool highlight;
