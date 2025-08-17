@@ -290,6 +290,45 @@ namespace MikuMikuWorld
 			return edited;
 		}
 
+		// we don't want FlickType::None to appear in the selection
+		template <>
+		static bool addSelectProperty<LayerEventType>(const char* label, LayerEventType& value,
+			const char* const* items, int count)
+		{
+			propertyLabel(label);
+
+			std::string id("##");
+			id.append(label);
+
+			bool edited = false;
+
+			std::string curr = getString(items[(int)value]);
+			if (!curr.size())
+				curr = items[(int)value];
+			if (ImGui::BeginCombo(id.c_str(), curr.c_str()))
+			{
+				for (int i = 0; i < count; ++i)
+				{
+					const bool selected = (int)value == i;
+					std::string str = getString(items[i]);
+					if (!str.size())
+						str = items[i];
+
+					if (ImGui::Selectable(str.c_str(), selected))
+					{
+						value = (LayerEventType)i;
+						edited = true;
+					}
+				}
+
+				ImGui::EndCombo();
+			}
+
+			//保证ImGui::IsItemDeactivatedAfterEdit()的执行
+			ImGui::NextColumn();
+
+			return edited;
+		}
 		static bool addFlickSelectPropertyWithNone(const char* label, FlickType& value,
 		                                           const char* const* items, int count)
 		{

@@ -197,11 +197,11 @@ namespace MikuMikuWorld
 			{
 				int tick = reader->readUInt32();
 				id_t id = getNextSkillID();
-				score.skills.emplace(id, SkillTrigger{ id, tick });
+				//score.skills.emplace(id, LayerEvent{ id, tick });
 			}
 
-			score.fever.startTick = reader->readUInt32();
-			score.fever.endTick = reader->readUInt32();
+			//score.fever.startTick = reader->readUInt32();
+			//score.fever.endTick = reader->readUInt32();
 		}
 	}
 
@@ -230,8 +230,8 @@ namespace MikuMikuWorld
 			writer->writeInt32(hiSpeed.layer);
 		}
 
-		writer->writeInt32(score.skills.size());
-		for (const auto& [_, skill] : score.skills)
+		writer->writeInt32(score.layerEvents.size());
+		for (const auto& [_, skill] : score.layerEvents)
 		{
 			writer->writeInt32(skill.tick);
 		}
@@ -267,6 +267,8 @@ namespace MikuMikuWorld
 		uint32_t damagesAddress{};
 		uint32_t layersAddress{};
 		uint32_t waypointsAddress{};
+		uint32_t eventLayerAddress{};
+
 		if (version > 2)
 		{
 			metadataAddress = reader.readUInt32();
@@ -279,6 +281,8 @@ namespace MikuMikuWorld
 				layersAddress = reader.readUInt32();
 			if (cyanvasVersion >= 5)
 				waypointsAddress = reader.readUInt32();
+			if (cyanvasVersion >= 5)
+				eventLayerAddress = reader.readUInt32();
 
 			reader.seek(metadataAddress);
 		}
@@ -419,6 +423,24 @@ namespace MikuMikuWorld
 			}
 		}
 
+		//mod ²ãÊÂ¼þ
+		if (cyanvasVersion >= 6)
+		{
+			score.layerEvents.clear();
+			reader.seek(eventLayerAddress);
+
+			int layerEventCount = reader.readUInt32();
+			score.layerEvents.reserve(layerEventCount);
+			for (int i = 0; i < layerEventCount; ++i)
+			{
+				id_t id = getNextSkillID();
+				LayerEventType type = (LayerEventType)reader.readUInt32();
+				int layer = reader.readUInt32();
+				int tick = reader.readUInt32();
+				score.layerEvents.emplace(id, LayerEvent{ id, tick,type,layer });
+			}
+		}
+
 		reader.close();
 		return score;
 	}
@@ -446,7 +468,7 @@ namespace MikuMikuWorld
 		// offsets address in order: metadata -> events -> taps -> holds
 		// Cyanvas extension: -> damages -> layers -> waypoints
 		uint32_t offsetsAddress = writer.getStreamPosition();
-		writer.writeNull(sizeof(uint32_t) * 7);
+		writer.writeNull(sizeof(uint32_t) * 8);
 
 		uint32_t metadataAddress = writer.getStreamPosition();
 		writeMetadata(score.metadata, &writer);
@@ -547,14 +569,23 @@ namespace MikuMikuWorld
 		}
 
 		uint32_t waypointsAddress = writer.getStreamPosition();
-
 		writer.writeInt32(score.waypoints.size());
-
 		for (const auto& waypoint : score.waypoints)
 		{
 			writer.writeString(waypoint.name);
 			writer.writeInt32(waypoint.tick);
 		}
+
+		// mod layerevent
+		uint32_t layereventAddress = writer.getStreamPosition();
+		writer.writeInt32(score.layerEvents.size());
+		for (const auto& [id, ev]: score.layerEvents)
+		{
+			writer.writeInt32((int)ev.type);
+			writer.writeInt32(ev.layer);
+			writer.writeInt32(ev.tick);
+		}
+
 		// write offset addresses
 		writer.seek(offsetsAddress);
 		writer.writeInt32(metadataAddress);
@@ -564,6 +595,7 @@ namespace MikuMikuWorld
 		writer.writeInt32(damagesAddress);
 		writer.writeInt32(layersAddress);
 		writer.writeInt32(waypointsAddress);
+		writer.writeInt32(layereventAddress);
 
 		writer.flush();
 		writer.close();

@@ -767,10 +767,19 @@ namespace MikuMikuWorld
 		feverControl(context.score, context.score.fever);
 
 		// Update skill triggers
-		for (const auto& [_, skill] : context.score.skills)
-			skillControl(context.score, skill);
+		// mod 用于层事件
+		for (const auto& [id, skill] : context.score.layerEvents)
+		{
+			if (layerEventControl(context, skill))
+			{
+				eventEdit.editId = id;
+				eventEdit.editLayerEventType = skill.type;
+				eventEdit.type = EventType::Skill;
+				ImGui::OpenPopup("edit_event");
+			}
+		}
 
-		eventEditor(context);
+		eventEditor(context, edit);
 		updateNotes(context, edit, renderer);
 
 		// Update cursor tick after determining whether a note is hovered
@@ -1256,6 +1265,17 @@ namespace MikuMikuWorld
 				                                 context.selectedLayer };
 			context.pushHistory("Insert hi-speed changes", prev, context.score);
 		}
+		// new 层事件
+		else if (currentMode == TimelineMode::InsertLayerEvent)
+		{
+			for (const auto& [_, ev] : context.score.layerEvents)
+				if (ev.tick == hoverTick)
+					return;
+			Score prev = context.score;
+			id_t id = getNextSkillID();
+			context.score.layerEvents[id] = { id, hoverTick, edit.layerEventType, context.selectedLayer };
+			context.pushHistory("Insert layer event changes", prev, context.score);
+		}
 	}
 
 	void ScoreEditorTimeline::previewInput(const ScoreContext& context, EditArgs& edit,
@@ -1337,6 +1357,12 @@ namespace MikuMikuWorld
 		case TimelineMode::InsertDamage:
 			drawCcNote(inputNotes.damage, renderer, hoverTint);
 			break;
+		
+		//new event
+		case TimelineMode::InsertLayerEvent:
+			layerEventControl(context, edit.layerEventType, hoverTick, -1, false);
+			//feverControl(context.score, context.score.fever);
+			break;
 
 		default:
 			drawNote(inputNotes.tap, renderer, hoverTint);
@@ -1372,6 +1398,7 @@ namespace MikuMikuWorld
 		case TimelineMode::InsertBPM:
 		case TimelineMode::InsertTimeSign:
 		case TimelineMode::InsertHiSpeed:
+		case TimelineMode::InsertLayerEvent:
 			insertEvent(context, edit);
 			break;
 
@@ -2464,13 +2491,13 @@ namespace MikuMikuWorld
 		// MOD 绘制的时候只绘制单独的中间
 		if (note.getType() == NoteType::Tap && !note.isFlick())
 		{
-			Vector2 pos{ laneToPosition(note.lane), getNoteYPosFromTick(note.tick + offsetTick) };
+			Vector2 pos{ laneToPosition(note.lane + offsetLane), getNoteYPosFromTick(note.tick + offsetTick) };
 			renderer->drawSprite(pos, 0.0f, Vector2(40, 40), AnchorType::MiddleCenter, tex, 0, tint, z);
 		}
 		// 普通圆形弹幕同上
 		else if (note.getType() == NoteType::Damage && note.damageType == DamageType::Circle)
 		{
-			Vector2 pos{ laneToPosition(note.lane), getNoteYPosFromTick(note.tick + offsetTick) };
+			Vector2 pos{ laneToPosition(note.lane + offsetLane), getNoteYPosFromTick(note.tick + offsetTick) };
 			renderer->drawSprite(pos, 0.0f, Vector2(40, 40), AnchorType::MiddleCenter, tex, 0, tint, z);
 		}
 		else
@@ -2595,7 +2622,7 @@ namespace MikuMikuWorld
 
 		if (note.damageType == DamageType::Circle)
 		{
-			Vector2 pos{ laneToPosition(note.lane), getNoteYPosFromTick(note.tick + offsetTick) };
+			Vector2 pos{ laneToPosition(note.lane + offsetLane), getNoteYPosFromTick(note.tick + offsetTick) };
 			renderer->drawSprite(pos, 0.0f, Vector2(40, 40), AnchorType::MiddleCenter, tex, 0, tint, z);
 		}
 		else
@@ -2674,17 +2701,31 @@ namespace MikuMikuWorld
 		                    IO::formatString("%d/%d", numerator, denominator).c_str(), enabled);
 	}
 
-	bool ScoreEditorTimeline::skillControl(const Score& score, const SkillTrigger& skill)
+	bool ScoreEditorTimeline::layerEventControl(const ScoreContext& context, const LayerEvent& layerevent)
 	{
-		return skillControl(score, skill.tick, !playing);
+		return layerEventControl(context, layerevent.type, layerevent.tick, layerevent.layer, false);
 	}
 
-	bool ScoreEditorTimeline::skillControl(const Score& score, int tick, bool enabled)
+	bool ScoreEditorTimeline::layerEventControl(const ScoreContext& context, LayerEventType eventType, int tick, int layer, bool selected)
 	{
+		std::string txt =
+			(layer == -1 || context.selectedLayer == layer)
+			? IO::formatString("%s", getString(layerEventTypes[(int)eventType]))
+			: IO::formatString("%s (%s)", getString(layerEventTypes[(int)eventType]), context.score.layers[layer].name.c_str());
 		float dpiScale = ImGui::GetMainViewport()->DpiScale;
-		Vector2 pos{ getTimelineStartX(score) - (50 * dpiScale),
+		Vector2 pos{ getTimelineStartX(context.score)
+							   - (((layer == -1 || context.showAllLayers || context.selectedLayer == layer)
+							   ? 123
+							   : 200) * dpiScale),
 			         position.y - tickToPosition(tick) + visualOffset };
-		return eventControl(getTimelineStartX(score), pos, skillColor, getString("skill"), enabled);
+		bool enabled = layer == -1 || context.showAllLayers || context.selectedLayer == layer;
+		auto color = enabled ? skillColor : inactiveSkillColor;
+		return eventControl(
+			getTimelineStartX(context.score), pos,
+			selected ? ImGui::ColorConvertFloat4ToU32(generateHighlightColor(
+				generateHighlightColor(ImGui::ColorConvertU32ToFloat4(color))))
+			: color,
+			txt.c_str(), enabled);
 	}
 
 	bool ScoreEditorTimeline::feverControl(const Score& score, const Fever& fever)
@@ -2755,8 +2796,11 @@ namespace MikuMikuWorld
 		return eventControl(getTimelineStartX(score), pos, waypointColor, name.c_str(), true);
 	}
 
-	void ScoreEditorTimeline::eventEditor(ScoreContext& context)
+	// mod 添加EditArgs& edit便于layer事件
+	void ScoreEditorTimeline::eventEditor(ScoreContext& context, EditArgs& edit)
 	{
+		bool was_popup_open_last_frame = false;
+
 		ImGui::SetNextWindowSize(ImVec2(250, -1), ImGuiCond_Always);
 		if (ImGui::BeginPopup("edit_event"))
 		{
@@ -2899,6 +2943,41 @@ namespace MikuMikuWorld
 					context.score.waypoints.erase(context.score.waypoints.begin() +
 					                              eventEdit.editId);
 					context.pushHistory("Remove waypint", prev, context.score);
+				}
+			}
+			// mod 层事件
+			else if (eventEdit.type == EventType::Skill)
+			{
+				if (context.score.layerEvents.find(eventEdit.editId) ==
+					context.score.layerEvents.end())
+				{
+					ImGui::CloseCurrentPopup();
+					ImGui::EndPopup();
+					return;
+				}
+				LayerEvent& layerEvent = context.score.layerEvents[eventEdit.editId];
+				UI::beginPropertyColumns();
+				// 下拉菜单选择事件
+				bool edit = UI::addSelectProperty<LayerEventType>(getString("layer_event_type"), eventEdit.editLayerEventType, layerEventTypes,
+					arrayLength(layerEventTypes));
+			
+				if (edit)
+				{					
+					Score prev = context.score;
+					//eventEdit.editLayerEventType = edit.layerEventType;
+					layerEvent.type = eventEdit.editLayerEventType;
+
+					context.pushHistory("Change layerevent", prev, context.score);
+				}
+				UI::endPropertyColumns();
+
+				ImGui::Separator();
+				if (ImGui::Button(getString("remove"), ImVec2(-1, UI::btnSmall.y + 2)))
+				{
+					ImGui::CloseCurrentPopup();
+					Score prev = context.score;
+					context.score.layerEvents.erase(eventEdit.editId);
+					context.pushHistory("Remove layerevent", prev, context.score);
 				}
 			}
 			ImGui::EndPopup();

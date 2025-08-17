@@ -17,12 +17,13 @@ namespace MikuMikuWorld
 	constexpr const char* SE_FLICK = "flick";
 	constexpr const char* SE_TICK = "tick";
 	constexpr const char* SE_FRICTION = "friction";
-	constexpr const char* SE_CONNECT = "connect";
+	constexpr const char* SE_CONNECT = "";
 	constexpr const char* SE_CRITICAL_TAP = "critical_tap";
 	constexpr const char* SE_CRITICAL_FLICK = "critical_flick";
 	constexpr const char* SE_CRITICAL_TICK = "critical_tick";
 	constexpr const char* SE_CRITICAL_FRICTION = "critical_friction";
-	constexpr const char* SE_CRITICAL_CONNECT = "critical_connect";
+	//È¥µôHOLDµÄSE
+	constexpr const char* SE_CRITICAL_CONNECT = "";
 
 	constexpr const char* SE_NAMES[] = { SE_PERFECT,         SE_FLICK,         SE_TICK,
 		                                 SE_FRICTION,        SE_CONNECT,       SE_CRITICAL_TAP,

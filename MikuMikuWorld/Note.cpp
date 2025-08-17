@@ -175,6 +175,8 @@ namespace MikuMikuWorld
 				return "";
 
 			se = note.critical ? SE_CRITICAL_TICK : SE_TICK;
+			//È¥µôholdµÄSE
+			return "";
 		}
 		else
 		{

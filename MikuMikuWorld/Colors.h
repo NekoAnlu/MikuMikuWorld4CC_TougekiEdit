@@ -18,6 +18,8 @@ namespace MikuMikuWorld
 	const ImU32 inactiveSpeedColor =
 	    ImGui::ColorConvertFloat4ToU32(ImVec4(0.99f, 0.35f, 0.25f, 0.50f));
 	const ImU32 skillColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.20f, 0.58f, 1.00f, 1.00f));
+	const ImU32 inactiveSkillColor =
+		ImGui::ColorConvertFloat4ToU32(ImVec4(0.16f, 0.33f, 0.64f, 0.70f));
 	const ImU32 feverColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.90f, 0.54f, 0.28f, 1.00f));
 	const ImU32 waypointColor = ImGui::ColorConvertFloat4ToU32(ImVec4(0.90f, 0.90f, 0.90f, 1.00f));
 	const ImU32 selectionColor1 =

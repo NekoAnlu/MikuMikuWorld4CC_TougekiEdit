@@ -64,7 +64,7 @@ namespace MikuMikuWorld
 		}
 		
 		//mod HTMLתColor
-		static inline Color fromHex(const std::string& hex, float alpha = 0.95f)
+		static inline Color fromHex(const std::string& hex, float alpha = 0.9f)
 		{
 			Color color{ 1.0,1.0,1.0,1.0 };
 			if (hex[0] != '#') return color;

@@ -13,10 +13,12 @@ namespace MikuMikuWorld
 	id_t getNextSkillID();
 	id_t getNextHiSpeedID();
 
-	struct SkillTrigger
+	struct LayerEvent
 	{
 		id_t ID;
 		int tick;
+		LayerEventType type{ LayerEventType::Layer_Show };
+		int layer = 0;
 	};
 
 	struct Fever
@@ -65,7 +67,7 @@ namespace MikuMikuWorld
 		std::vector<Tempo> tempoChanges;
 		std::map<int, TimeSignature> timeSignatures;
 		std::unordered_map<id_t, HiSpeedChange> hiSpeedChanges;
-		std::unordered_map<id_t, SkillTrigger> skills;
+		std::unordered_map<id_t, LayerEvent> layerEvents;
 		Fever fever;
 
 		std::vector<Layer> layers{ { Layer{ "default" } } };

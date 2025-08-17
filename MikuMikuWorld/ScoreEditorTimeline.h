@@ -205,8 +205,10 @@ namespace MikuMikuWorld
 		bool bpmControl(const Score& score, float bpm, int tick, bool enabled);
 		bool timeSignatureControl(const Score& score, int numerator, int denominator, int tick,
 		                          bool enabled);
-		bool skillControl(const Score& score, const SkillTrigger& skill);
-		bool skillControl(const Score& score, int tick, bool enabled);
+		//mod skillControl修改为层事件
+		bool layerEventControl(const ScoreContext& context, const LayerEvent& layerevent);
+		bool layerEventControl(const ScoreContext& context, LayerEventType eventType, int tick, int layer, bool selected);
+
 		bool feverControl(const Score& score, const Fever& fever);
 		bool feverControl(const Score& score, int tick, bool start, bool enabled);
 		bool hiSpeedControl(const ScoreContext& context, const HiSpeedChange& hiSpeed);
@@ -219,7 +221,7 @@ namespace MikuMikuWorld
 		void previewInput(const ScoreContext& context, EditArgs& edit, Renderer* renderer);
 		void previewPaste(ScoreContext& context, Renderer* renderer);
 		void executeInput(ScoreContext& context, EditArgs& edit);
-		void eventEditor(ScoreContext& context);
+		void eventEditor(ScoreContext& context, EditArgs& edit);
 
 		void insertNote(ScoreContext& context, EditArgs& edit);
 		void insertHold(ScoreContext& context, EditArgs& edit);
@@ -249,6 +251,10 @@ namespace MikuMikuWorld
 			float editHiSpeed = 1.0f;
 
 			std::string editName = "";
+
+			//new 层事件index
+			LayerEventType editLayerEventType{ LayerEventType::Layer_Show };
+
 		} eventEdit{};
 
 		int snapTickFromPos(double posY) const;

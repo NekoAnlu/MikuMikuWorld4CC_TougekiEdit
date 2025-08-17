@@ -141,7 +141,7 @@ namespace MikuMikuWorld
 		std::unordered_map<id_t, HoldNote> holds;
 		holds.reserve(sus.slides.size());
 
-		std::unordered_map<id_t, SkillTrigger> skills;
+		std::unordered_map<id_t, LayerEvent> skills;
 		Fever fever{ -1, -1 };
 
 		std::unordered_set<std::string> cyanvasStyleCriticalTraces;
@@ -400,7 +400,7 @@ namespace MikuMikuWorld
 		score.timeSignatures = timeSignatures;
 		score.layers = layers;
 		score.hiSpeedChanges = hiSpeedChanges;
-		score.skills = skills;
+		score.layerEvents = skills;
 		score.fever = fever;
 
 		return score;
@@ -568,7 +568,7 @@ namespace MikuMikuWorld
 			}
 		}
 
-		for (const auto& [_, skill] : score.skills)
+		for (const auto& [_, skill] : score.layerEvents)
 			taps.push_back(SUSNote{ skill.tick, 0, 1, 4 });
 
 		if (score.fever.startTick != -1)
@@ -1246,7 +1246,19 @@ namespace MikuMikuWorld
 			obj["layer"] = i;
 			svObjects.push_back(obj);
 		}
-		
+
+		// new 处理层事件			
+		for (const auto& [_, ev] : score.layerEvents)
+		{
+			json obj;
+			obj["layer"] = ev.layer;
+			obj["beat"] = ev.tick / (double)TICKS_PER_BEAT;
+			// 0被colorset占用了 1是show 2是hide
+			obj["type"] = (int)(ev.type) + 1;
+			eventObjects.push_back(obj);
+		}
+
+	
 		// 处理按键
 		for (const auto& [_, note] : score.notes)
 		{
@@ -1359,6 +1371,7 @@ namespace MikuMikuWorld
 			}
 			
 			// 事件
+			// 0 colorset 1 layerevent
 			else if (note.holdEventType == HoldEventType::Event_Colorset)
 			{
 				obj["layer"] = score.notes.at(note.start.ID).layer;
@@ -1375,7 +1388,7 @@ namespace MikuMikuWorld
 				obj["endbeat"] = end.tick / (double)TICKS_PER_BEAT;
 				obj["width"] = start.width;
 				obj["track"] = start.lane;
-				obj["type"] = note.holdEventType;
+				obj["type"] = 0;
 				obj["colorsetID"] = note.colorsetID;
 				obj["highlight"] = note.highlight ? 1 : 0;
 
@@ -1494,11 +1507,11 @@ namespace MikuMikuWorld
 				{
 					std::string direction = obj["direction"].get<std::string>();
 					note.width = obj["width"].get<float>();
-					if (direction == "0")
+					if (direction == "1")
 						note.flick = FlickType::Default;
-					else if (direction == "1")
-						note.flick = FlickType::Left;
 					else if (direction == "2")
+						note.flick = FlickType::Left;
+					else if (direction == "3")
 						note.flick = FlickType::Right;
 				}
 
@@ -1654,35 +1667,57 @@ namespace MikuMikuWorld
 		for (const auto& obj : root["events"])
 		{
 			int layer = obj["layer"].get<int>();
-			
-			HoldNote hold;
-			hold.holdEventType = static_cast<HoldEventType>(obj["type"].get<int>());
+			int type = obj["type"].get<int>();
 
-			// 创建开始音符
-			Note startNote(NoteType::Hold);
-			Note endNote(NoteType::HoldEnd);
-			startNote.tick = obj["beat"].get<double>() * TICKS_PER_BEAT;
-			startNote.lane = obj["track"].get<float>();
-			startNote.width = obj["width"].get<float>();
-			startNote.layer = layer;
-			startNote.ID = Note::getNextID();
-			score.notes[startNote.ID] = startNote;
-				
-			endNote.tick = obj["endbeat"].get<double>() * TICKS_PER_BEAT;
-			endNote.lane = obj["track"].get<float>();
-			endNote.width = obj["width"].get<float>();
-			endNote.layer = layer;
-			endNote.ID = Note::getNextID();
-			endNote.parentID = startNote.ID;
-				
-			score.notes[endNote.ID] = endNote;
-			hold.start.ID = startNote.ID;
-			hold.end = endNote.ID;
-			hold.colorsetID = obj["colorsetID"].get<int>();
-			hold.highlight = obj["highlight"].get<int>() == 1;
+			switch (type)
+			{		
+				// 0 colorset
+				case 0: 
+				{
+					HoldNote hold;
+					hold.holdEventType = static_cast<HoldEventType>(2);
 
-			score.holdNotes[startNote.ID] = hold;
-			
+					// 创建开始音符
+					Note startNote(NoteType::Hold);
+					Note endNote(NoteType::HoldEnd);
+					startNote.tick = obj["beat"].get<double>() * TICKS_PER_BEAT;
+					startNote.lane = obj["track"].get<float>();
+					startNote.width = obj["width"].get<float>();
+					startNote.layer = layer;
+					startNote.ID = Note::getNextID();
+					score.notes[startNote.ID] = startNote;
+
+					endNote.tick = obj["endbeat"].get<double>() * TICKS_PER_BEAT;
+					endNote.lane = obj["track"].get<float>();
+					endNote.width = obj["width"].get<float>();
+					endNote.layer = layer;
+					endNote.ID = Note::getNextID();
+					endNote.parentID = startNote.ID;
+
+					score.notes[endNote.ID] = endNote;
+					hold.start.ID = startNote.ID;
+					hold.end = endNote.ID;
+					hold.colorsetID = obj["colorsetID"].get<int>();
+					hold.highlight = obj["highlight"].get<int>() == 1;
+
+					score.holdNotes[startNote.ID] = hold;
+					break;
+				}
+				//1 2 层事件
+				case 1:
+				case 2:
+				{
+					LayerEvent layerEvent;
+					layerEvent.ID = getNextSkillID();
+					layerEvent.tick = obj["beat"].get<double>() * TICKS_PER_BEAT;
+					layerEvent.type = (LayerEventType)(type - 1);
+					layerEvent.layer = layer;
+
+					score.layerEvents[layerEvent.ID] = layerEvent;
+					break;
+				}
+
+			}
 		}
 
 		// 7. 确保至少有一个默认层

@@ -82,7 +82,7 @@ namespace MikuMikuWorld
 	{
 		Event_Warning,
 		Event_Laser,
-		Event_Colorset,
+		Event_Colorset
 	};
 
 	constexpr const char* holdEventTypes[]{ "event_warning", "event_laser", "event_colorset" };
@@ -114,4 +114,13 @@ namespace MikuMikuWorld
 	};
 
 	constexpr const char* fadeTypes[]{ "fade_out", "fade_none", "fade_in" };
+
+	//mod ²ãÊÂ¼þ
+	enum class LayerEventType : uint8_t
+	{
+		Layer_Hide,
+		Layer_Show
+	};
+
+	constexpr const char* layerEventTypes[]{ "layer_hide", "layer_show" };
 }
