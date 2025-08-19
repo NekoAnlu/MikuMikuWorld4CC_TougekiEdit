@@ -1269,7 +1269,7 @@ namespace MikuMikuWorld
 		else if (currentMode == TimelineMode::InsertLayerEvent)
 		{
 			for (const auto& [_, ev] : context.score.layerEvents)
-				if (ev.tick == hoverTick)
+				if (ev.tick == hoverTick && ev.layer == context.selectedLayer)
 					return;
 			Score prev = context.score;
 			id_t id = getNextSkillID();

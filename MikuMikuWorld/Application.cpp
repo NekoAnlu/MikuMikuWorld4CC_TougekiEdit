@@ -343,6 +343,7 @@ namespace MikuMikuWorld
 		ResourceManager::loadTexture(texturesDir + "timeline_bpm.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_time_signature.png");
 		ResourceManager::loadTexture(texturesDir + "timeline_hi_speed.png");
+		ResourceManager::loadTexture(texturesDir + "timeline_layer_event.png");
 
 		//mod 自定义按键材质
 		ResourceManager::loadTexture(texturesDir + "bell.png");

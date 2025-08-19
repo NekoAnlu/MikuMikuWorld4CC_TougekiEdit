@@ -1253,7 +1253,8 @@ namespace MikuMikuWorld
 			json obj;
 			obj["layer"] = ev.layer;
 			obj["beat"] = ev.tick / (double)TICKS_PER_BEAT;
-			// 0被colorset占用了 1是show 2是hide
+			// 0被colorset占用了 1是hide 2是show
+			int type = (int)(ev.type) + 1;
 			obj["type"] = (int)(ev.type) + 1;
 			eventObjects.push_back(obj);
 		}
@@ -1710,7 +1711,7 @@ namespace MikuMikuWorld
 					LayerEvent layerEvent;
 					layerEvent.ID = getNextSkillID();
 					layerEvent.tick = obj["beat"].get<double>() * TICKS_PER_BEAT;
-					layerEvent.type = (LayerEventType)(type - 1);
+					layerEvent.type = static_cast<LayerEventType>(type - 1);
 					layerEvent.layer = layer;
 
 					score.layerEvents[layerEvent.ID] = layerEvent;
