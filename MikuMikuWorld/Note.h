@@ -55,7 +55,7 @@ namespace MikuMikuWorld
 		//mod
 		int bell;
 		int ten;
-		int danmaku;
+		int danmaku[13];
 		int danmaku_center;
 		int danmaku_left;
 		int danmaku_right;
@@ -90,7 +90,7 @@ namespace MikuMikuWorld
 		// 是否可以被调整宽度
 		bool resizeAble{ false };
 		// Damage类型
-		DamageType damageType { DamageType::Circle };
+		DamageType damageType { DamageType::Danmaku_1 };
 		DamageDirection damageDirection { DamageDirection::None };
 		//-------------Mod End
 

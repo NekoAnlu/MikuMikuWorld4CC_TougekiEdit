@@ -519,7 +519,7 @@ namespace MikuMikuWorld
 								continue;
 							}
 							//切换为bullet后可以改宽度
-							if (note.damageType == DamageType::Circle)
+							if (note.damageType != DamageType::Bullet)
 							{
 								n.resizeAble = false;
 								n.width = 1;

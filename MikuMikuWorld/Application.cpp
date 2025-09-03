@@ -356,6 +356,11 @@ namespace MikuMikuWorld
 		ResourceManager::loadTexture(texturesDir + "flick_up.png");
 		ResourceManager::loadTexture(texturesDir + "ten.png");
 
+		//mod 弹幕材质用循环读
+		for (auto danmage : damageTypes)
+			ResourceManager::loadTexture(
+				appDir + IO::formatString("res\\textures\\danmaku\\%s.png",
+					std::string(danmage).c_str()));
 
 		// Cache note textures indices
 		noteTextures.notes = ResourceManager::getTexture(NOTES_TEX);
@@ -367,13 +372,24 @@ namespace MikuMikuWorld
 		//mod 自定义按键材质
 		noteTextures.bell = ResourceManager::getTexture(BELL_TEX);
 		noteTextures.ten = ResourceManager::getTexture(TEN_TEX);
-		noteTextures.danmaku = ResourceManager::getTexture(DAMAKU_TEX);
-		noteTextures.danmaku_center = ResourceManager::getTexture(DAMAKU_CENTER_TEX);
-		noteTextures.danmaku_left = ResourceManager::getTexture(DAMAKU_LEFT_TEX);
-		noteTextures.danmaku_right = ResourceManager::getTexture(DAMAKU_RIGHT_TEX);
 		noteTextures.flick_left = ResourceManager::getTexture(FLICK_LEFT_TEX);
 		noteTextures.flick_right = ResourceManager::getTexture(FLICK_RIGHT_TEX);
 		noteTextures.flick_up = ResourceManager::getTexture(FLICK_UP_TEX);
+		//弹幕单独处理
+		/*for (int i = 0;i < sizeof(damageTypes) / sizeof(damageTypes[0]) - 1;i++)
+			noteTextures.danmaku[i] = ResourceManager::getTexture(DAMAKU_TEX + '_' + i);*/
+		int i = 0;
+		for (auto danmage : damageTypes)
+		{
+			if (danmage != "bullet")
+				noteTextures.danmaku[i] = ResourceManager::getTexture(danmage);
+			i++;
+		}
+
+		noteTextures.danmaku_center = ResourceManager::getTexture(DAMAKU_CENTER_TEX);
+		noteTextures.danmaku_left = ResourceManager::getTexture(DAMAKU_LEFT_TEX);
+		noteTextures.danmaku_right = ResourceManager::getTexture(DAMAKU_RIGHT_TEX);
+
 
 		Localization::loadLanguages(appDir + "res\\i18n");
 	}

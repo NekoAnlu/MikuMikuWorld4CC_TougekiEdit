@@ -228,7 +228,7 @@ namespace MikuMikuWorld
 				curr = items[(int)value];
 			if (ImGui::BeginCombo(id.c_str(), curr.c_str()))
 			{
-				for (int i = (int)DamageType::Circle; i < count; ++i)
+				for (int i = (int)DamageType::Danmaku_0; i < count; ++i)
 				{
 					const bool selected = (int)value == i;
 					std::string str = getString(items[i]);

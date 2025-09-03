@@ -809,7 +809,7 @@ namespace MikuMikuWorld
 			{
 				lanePos -= note.width / 2.0f;
 			}
-			else if (note.getType() == NoteType::Damage && note.damageType == DamageType::Circle)
+			else if (note.getType() == NoteType::Damage && note.damageType != DamageType::Bullet)
 			{
 				lanePos -= note.width / 2.0f;
 			}
@@ -1217,7 +1217,7 @@ namespace MikuMikuWorld
 			inputNotes.holdStart.tick = tick;
 		}
 
-		if (inputNotes.damage.damageType == DamageType::Circle)
+		if (inputNotes.damage.damageType != DamageType::Bullet)
 			inputNotes.damage.resizeAble = false;
 		else
 			inputNotes.damage.resizeAble = true;
@@ -1622,7 +1622,7 @@ namespace MikuMikuWorld
 			lanePos -= note.width / 2.0f;
 		}
 		//圆形弹幕同理
-		else if (note.getType() == NoteType::Damage && note.damageType == DamageType::Circle)
+		else if (note.getType() == NoteType::Damage && note.damageType != DamageType::Bullet)
 		{
 			lanePos -= note.width / 2.0f;
 		}
@@ -2452,7 +2452,7 @@ namespace MikuMikuWorld
 		}
 		else if (note.getType() == NoteType::Damage)
 		{
-			texName = noteTextures.danmaku;
+			texName = noteTextures.danmaku[0];
 			sprIndex = 0;
 		}
 		else
@@ -2495,7 +2495,7 @@ namespace MikuMikuWorld
 			renderer->drawSprite(pos, 0.0f, Vector2(40, 40), AnchorType::MiddleCenter, tex, 0, tint, z);
 		}
 		// 普通圆形弹幕同上
-		else if (note.getType() == NoteType::Damage && note.damageType == DamageType::Circle)
+		else if (note.getType() == NoteType::Damage && note.damageType != DamageType::Bullet)
 		{
 			Vector2 pos{ laneToPosition(note.lane + offsetLane), getNoteYPosFromTick(note.tick + offsetTick) };
 			renderer->drawSprite(pos, 0.0f, Vector2(40, 40), AnchorType::MiddleCenter, tex, 0, tint, z);
@@ -2567,11 +2567,12 @@ namespace MikuMikuWorld
 		int sprIndex = -1;
 
 		//mod 根据按键类型加载自定义贴图 修改自getNoteSpriteIndex（）
-		if (note.damageType == DamageType::Circle)
+		if (note.damageType != DamageType::Bullet)
 		{
 			switch (note.damageDirection)
 			{
-				case DamageDirection::Left:
+				// mod修改为单独贴上方向
+				/*case DamageDirection::Left:
 				{
 					texName = noteTextures.danmaku_left;
 					break;
@@ -2585,10 +2586,10 @@ namespace MikuMikuWorld
 				{
 					texName = noteTextures.danmaku_center;
 					break;
-				}
+				}*/
 				default:
 				{
-					texName = noteTextures.danmaku;
+					texName = noteTextures.danmaku[(int)note.damageType];
 					break;
 				}
 			}
@@ -2620,10 +2621,35 @@ namespace MikuMikuWorld
 
 		const int z = (selectedLayer ? (int)ZIndex::zCount : 0) + 1;
 
-		if (note.damageType == DamageType::Circle)
+		if (note.damageType != DamageType::Bullet)
 		{
 			Vector2 pos{ laneToPosition(note.lane + offsetLane), getNoteYPosFromTick(note.tick + offsetTick) };
 			renderer->drawSprite(pos, 0.0f, Vector2(40, 40), AnchorType::MiddleCenter, tex, 0, tint, z);
+
+			// 绘制射出方向贴图
+			if (note.damageDirection != DamageDirection::None)
+			{
+				switch (note.damageDirection)
+				{
+					case DamageDirection::Left:
+					{
+						texName = noteTextures.danmaku_left;
+						break;
+					}
+					case DamageDirection::Right:
+					{
+						texName = noteTextures.danmaku_right;
+						break;
+					}
+					case DamageDirection::Middle:
+					{
+						texName = noteTextures.danmaku_center;
+						break;
+					}
+				}
+				const Texture& dirTex = ResourceManager::textures[texName];
+				renderer->drawSprite(pos, 0.0f, Vector2(20, 20), AnchorType::MiddleCenter, dirTex, 0, tint, z + 1);
+			}
 		}
 		else
 		{

@@ -38,10 +38,12 @@ namespace MikuMikuWorld
 	// mod µ¯Ä»ÊôÐÔ WIP
 	enum class DamageType : uint8_t
 	{
-		Circle, Bullet
+		Danmaku_0, Danmaku_1, Danmaku_2, Danmaku_3, Danmaku_4, Danmaku_5, Danmaku_6
+		, Danmaku_7, Danmaku_8, Danmaku_9, Danmaku_10, Bullet
 	};
 
-	constexpr const char* damageTypes[]{ "circle", "bullet" };
+	constexpr const char* damageTypes[]{ "danmaku_0", "danmaku_1", "danmaku_2", "danmaku_3", "danmaku_4"
+		, "danmaku_5", "danmaku_6", "danmaku_7", "danmaku_8", "danmaku_9", "danmaku_10", "bullet"};
 
 
 	enum class HoldStepType : uint8_t

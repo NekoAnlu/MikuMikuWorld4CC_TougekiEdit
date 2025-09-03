@@ -497,10 +497,10 @@ namespace MikuMikuWorld
 	{
 		try
 		{
+			int laneExtension = context.score.metadata.laneExtension;
 			context.score.metadata = context.workingData.toScoreMetadata();
 
-			//old mmw save
-			int laneExtension = context.score.metadata.laneExtension;
+			// old mmw save
 			context.score.metadata.laneExtension = laneExtension;
 			serializeScore(context.score, filename);
 
