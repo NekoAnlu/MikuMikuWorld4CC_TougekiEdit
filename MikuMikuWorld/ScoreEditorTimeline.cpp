@@ -774,7 +774,7 @@ namespace MikuMikuWorld
 			{
 				eventEdit.editId = id;
 				eventEdit.editLayerEventType = skill.type;
-				eventEdit.type = EventType::Skill;
+				eventEdit.type = EventType::LayerEvent;
 				ImGui::OpenPopup("edit_event");
 			}
 		}
@@ -2566,33 +2566,14 @@ namespace MikuMikuWorld
 		int texName = -1;
 		int sprIndex = -1;
 
+		// 弹幕颜色mod
+		std::string danmakuColorInHex = note.colorInHex;
+		Color localTint = Color::fromHex(danmakuColorInHex) * tint;
+
 		//mod 根据按键类型加载自定义贴图 修改自getNoteSpriteIndex（）
 		if (note.damageType != DamageType::Bullet)
-		{
-			switch (note.damageDirection)
-			{
-				// mod修改为单独贴上方向
-				/*case DamageDirection::Left:
-				{
-					texName = noteTextures.danmaku_left;
-					break;
-				}
-				case DamageDirection::Right:
-				{
-					texName = noteTextures.danmaku_right;
-					break;
-				}
-				case DamageDirection::Middle:
-				{
-					texName = noteTextures.danmaku_center;
-					break;
-				}*/
-				default:
-				{
-					texName = noteTextures.danmaku[(int)note.damageType];
-					break;
-				}
-			}
+		{		
+			texName = noteTextures.danmaku[(int)note.damageType];
 			sprIndex = 0;
 		}
 		else
@@ -2624,7 +2605,7 @@ namespace MikuMikuWorld
 		if (note.damageType != DamageType::Bullet)
 		{
 			Vector2 pos{ laneToPosition(note.lane + offsetLane), getNoteYPosFromTick(note.tick + offsetTick) };
-			renderer->drawSprite(pos, 0.0f, Vector2(40, 40), AnchorType::MiddleCenter, tex, 0, tint, z);
+			renderer->drawSprite(pos, 0.0f, Vector2(40, 40), AnchorType::MiddleCenter, tex, 0, localTint, z);
 
 			// 绘制射出方向贴图
 			if (note.damageDirection != DamageDirection::None)
@@ -2648,7 +2629,7 @@ namespace MikuMikuWorld
 					}
 				}
 				const Texture& dirTex = ResourceManager::textures[texName];
-				renderer->drawSprite(pos, 0.0f, Vector2(20, 20), AnchorType::MiddleCenter, dirTex, 0, tint, z + 1);
+				renderer->drawSprite(pos, 0.0f, Vector2(15, 15), AnchorType::MiddleCenter, dirTex, 0, tint, z + 1);
 			}
 		}
 		else
@@ -2972,7 +2953,7 @@ namespace MikuMikuWorld
 				}
 			}
 			// mod 层事件
-			else if (eventEdit.type == EventType::Skill)
+			else if (eventEdit.type == EventType::LayerEvent)
 			{
 				if (context.score.layerEvents.find(eventEdit.editId) ==
 					context.score.layerEvents.end())

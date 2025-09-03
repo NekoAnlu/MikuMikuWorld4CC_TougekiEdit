@@ -1210,10 +1210,12 @@ namespace MikuMikuWorld
 		std::vector<json> objects;
 
 		// 处理meta
-		//musicData["filename"] = score.metadata.musicFile;
 		musicData["songTitle"] = score.metadata.title;
 		musicData["artist"] = score.metadata.artist;
+		musicData["author"] = score.metadata.author;
+		musicData["filename"] = score.metadata.musicFile;
 		musicData["offset"] = score.metadata.musicOffset / -1000.0f;
+		musicData["laneExtension"] = score.metadata.laneExtension;
 
 		// 处理bpm
 		for (const auto& bpm : score.tempoChanges)
@@ -1304,10 +1306,17 @@ namespace MikuMikuWorld
 				obj["layer"] = note.layer;
 				// 确定弹幕类型
 				obj["datamodel"] = "spawn_danmaku";
-				// new 弹幕类型 WIP
+				// 弹幕类型
 				obj["type"] = note.damageType;
 				// 方向 0 none 1 middle 2 left 3 right
 				obj["direction"] = note.damageDirection;
+				// 弹幕射出方向速度插值
+				obj["ease"] = note.damageEase;
+				// 弹幕颜色
+				obj["color"] = note.colorInHex;
+				// 是否与整体颜色同步
+				obj["synccolor"] = note.syncColor;
+
 				obj["beat"] = note.tick / (double)TICKS_PER_BEAT;
 				obj["width"] = note.width;
 				obj["track"] = note.lane;
@@ -1478,7 +1487,10 @@ namespace MikuMikuWorld
 		json songData = root["musicdata"];
 		score.metadata.title = songData["songTitle"].get<std::string>();
 		score.metadata.artist = songData["artist"].get<std::string>();
-		//score.metadata.musicOffset = songData["offset"].get<float>() * -1000.0f;  // 转换回毫秒
+		score.metadata.author = songData["author"].get<std::string>();
+		score.metadata.musicOffset = songData["offset"].get<float>() * -1000.0f;  // 转换回毫秒
+		score.metadata.musicFile = songData["filename"].get<std::string>();
+		score.metadata.laneExtension = songData["laneExtension"].get<int>();
 
 		// 3. 读取 BPM 变化
 		for (const auto& obj : root["timing"])
@@ -1529,6 +1541,9 @@ namespace MikuMikuWorld
 				note.damageType = (DamageType)obj["type"].get<int>();
 				note.damageDirection = (DamageDirection)obj["direction"].get<int>();
 				note.layer = obj["layer"].get<int>();
+				note.damageEase = (EaseType)obj["ease"].get<int>();
+				note.colorInHex = obj["color"].get<std::string>();
+				note.syncColor = obj["synccolor"].get<int>() == 1 ? true : false;
 
 				note.ID = Note::getNextID();
 				score.notes[note.ID] = note;

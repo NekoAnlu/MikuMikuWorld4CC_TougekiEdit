@@ -76,14 +76,14 @@ namespace MikuMikuWorld
 		Bpm,
 		TimeSignature,
 		HiSpeed,
-		Skill,
+		LayerEvent,
 		Fever,
 		Waypoint,
 		EventTypeMax
 	};
 
 	constexpr const char* eventTypes[]{ "none",  "bpm",   "time_signature", "hi_speed",
-		                                "skill", "fever", "waypoint" };
+		                                "layer_event", "fever", "waypoint" };
 
 	enum class Direction : uint8_t
 	{

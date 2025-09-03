@@ -278,6 +278,7 @@ zoom_out,Zoom Out
 extraspeed,Extra Speed
 damagedirection,Danmaku Direction
 middle,Middle
+damageease,Danmage Ease
 damagetype,Danmaku Type
 circle,Clrcle
 bullet,Bullet
@@ -288,4 +289,6 @@ event_colorset,Colorset
 colorset_index,Colorset Index
 colorset_highlight,Highlight
 color_html,HTML Color
-223123123123,332323
+layer_event_type,Event Type
+edit_layer_event,Edit Layer Event
+synccolor,Sync Color

@@ -84,6 +84,10 @@ namespace MikuMikuWorld
 			note.extraSpeed = reader->readSingle();
 			note.damageType = (DamageType)reader->readUInt32();
 			note.damageDirection = (DamageDirection)reader->readUInt32();
+			note.damageEase = (EaseType)reader->readUInt32();;
+			note.colorInHex = reader->readString();
+			note.syncColor = reader->readUInt32() == 1 ? true : false;
+
 		}
 		
 		if (!note.hasEase())
@@ -105,6 +109,9 @@ namespace MikuMikuWorld
 		writer->writeSingle(note.extraSpeed);
 		writer->writeInt32((int)note.damageType);
 		writer->writeInt32((int)note.damageDirection);
+		writer->writeInt32((int)note.damageEase);
+		writer->writeString(note.colorInHex);
+		writer->writeInt32(note.syncColor ? 1 : 0);
 
 		if (!note.hasEase())
 			writer->writeInt32((int)note.flick);

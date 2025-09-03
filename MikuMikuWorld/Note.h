@@ -92,6 +92,13 @@ namespace MikuMikuWorld
 		// Damage类型
 		DamageType damageType { DamageType::Danmaku_1 };
 		DamageDirection damageDirection { DamageDirection::None };
+		// 弹幕x轴移动的曲线
+		EaseType damageEase{ EaseType::Linear };
+		// 弹幕颜色
+		std::string colorInHex{ "#FFFFFF" };
+		// 是否和整体颜色同步
+		bool syncColor{ true };
+
 		//-------------Mod End
 
 		FlickType flick{ FlickType::None };

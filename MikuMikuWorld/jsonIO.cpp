@@ -21,7 +21,9 @@ namespace jsonIO
 		note.resizeAble = tryGetValue<int>(data, "resizeAble", 1) == 1 ? true : false;
 		note.damageType = static_cast<mmw::DamageType>(tryGetValue<int>(data, "damageType", 0));
 		note.damageDirection = static_cast<mmw::DamageDirection>(tryGetValue<int>(data, "damageDirection", 0));
-
+		note.damageEase = static_cast<mmw::EaseType>(tryGetValue<int>(data, "damageEase", 0));
+		note.colorInHex = tryGetValue<std::string>(data, "colorInHex", "#FFFFFF");
+		note.syncColor = tryGetValue<int>(data, "syncColor", 1) == 1 ? true : false;
 
 		if (note.getType() != mmw::NoteType::HoldMid)
 		{
@@ -62,6 +64,9 @@ namespace jsonIO
 		data["resizeAble"] = note.resizeAble ? 1 : 0;
 		data["damageType"] = note.damageType;
 		data["damageDirection"] = note.damageDirection;
+		data["damageEase"] = note.damageEase;
+		data["colorInHex"] = note.colorInHex;
+		data["syncColor"] = note.syncColor ? 1 : 0;
 
 		if (note.getType() != mmw::NoteType::HoldMid)
 		{

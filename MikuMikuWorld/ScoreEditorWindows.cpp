@@ -534,6 +534,52 @@ namespace MikuMikuWorld
 						}
 						edited = true;
 					}
+					
+					// 弹幕x轴移动速度曲线
+					if (UI::addSelectProperty(getString("damageease"), note.damageEase, easeTypes,
+						arrayLength(easeTypes)))
+					{
+						for (auto& id : context.selectedNotes)
+						{
+							auto& n = context.score.notes.at(id);
+							if (n.getType() != NoteType::Damage)
+							{
+								continue;
+							}
+							n.damageEase = note.damageEase;
+						}
+						edited = true;
+					}
+
+					// mod 弹幕也加一个属性填写HTML
+					if (UI::addStringProperty(getString("color_html"), note.colorInHex))
+					{
+						for (auto& id : context.selectedNotes)
+						{
+							auto& n = context.score.notes.at(id);
+							if (n.getType() != NoteType::Damage)
+							{
+								continue;
+							}
+							n.colorInHex = note.colorInHex;
+						}
+						edited = true;
+					}
+
+					// mod 颜色是否和整体同步
+					if (UI::addCheckboxProperty(getString("synccolor"), note.syncColor))
+					{
+						for (auto& id : context.selectedNotes)
+						{
+							auto& n = context.score.notes.at(id);		
+							if (n.getType() != NoteType::Damage)
+							{
+								continue;
+							}
+							n.syncColor = note.syncColor;
+						}
+						edited = true;
+					}
 				}
 				// mod damage end
 			}
