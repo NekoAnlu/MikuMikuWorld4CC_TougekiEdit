@@ -1165,6 +1165,7 @@ namespace MikuMikuWorld
 	/// <summary>
 	/// 切换当前所选要插入的按键时调用
 	/// 对应option窗口的设置
+	/// 设置下一个插入按键的默认值
 	/// </summary>
 	/// <param name="score"></param>
 	/// <param name="edit"></param>
@@ -1225,6 +1226,11 @@ namespace MikuMikuWorld
 		inputNotes.damage.lane = lane + 1;
 		inputNotes.damage.width = 1;
 		inputNotes.damage.tick = tick;
+		//保存的默认值
+		inputNotes.damage.damageType = edit.damageType;
+		inputNotes.damage.colorInHex = edit.damageColor;
+		inputNotes.damage.syncColor = edit.damageSyncColor;
+
 	}
 
 	void ScoreEditorTimeline::insertEvent(ScoreContext& context, EditArgs& edit)
@@ -3092,7 +3098,7 @@ namespace MikuMikuWorld
 												  edit.holdEventType,
 												  edit.colorsetID,
 												  edit.highlight,
-												  edit.colorInHex,
+												  edit.guideColor,
 												  //mod end
 			                                      edit.fadeType,
 			                                      edit.colorType };

@@ -278,8 +278,8 @@ zoom_out,Zoom Out
 extraspeed,Extra Speed
 damagedirection,Danmaku Direction
 middle,Middle
-damageease,Danmage Ease
-damagetype,Danmaku Type
+damageease,Damage Ease
+damagetype,Damaku Type
 circle,Clrcle
 bullet,Bullet
 hold_event_type,Event Type
@@ -292,3 +292,5 @@ color_html,HTML Color
 layer_event_type,Event Type
 edit_layer_event,Edit Layer Event
 synccolor,Sync Color
+hold_ease_type,Hold Ease Type
+damage_color,Damage Color

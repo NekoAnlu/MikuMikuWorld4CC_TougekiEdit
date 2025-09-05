@@ -532,6 +532,7 @@ namespace MikuMikuWorld
 							n.damageType = note.damageType;
 
 						}
+						
 						edited = true;
 					}
 					
@@ -791,40 +792,68 @@ namespace MikuMikuWorld
 
 	void ScoreOptionsWindow::update(ScoreContext& context, EditArgs& edit, TimelineMode currentMode)
 	{
-		UI::beginPropertyColumns();
-		switch (currentMode)
+		//UI::beginPropertyColumns();
+		//switch (currentMode)
+		//{
+		//case TimelineMode::InsertBPM:
+		//	UI::addFloatProperty(getString("bpm"), edit.bpm, "%g BPM");
+		//	edit.bpm = std::clamp(edit.bpm, MIN_BPM, MAX_BPM);
+		//	break;
+
+		//case TimelineMode::InsertTimeSign:
+		//	UI::timeSignatureSelect(edit.timeSignatureNumerator, edit.timeSignatureDenominator);
+		//	break;
+
+		//case TimelineMode::InsertHiSpeed:
+		//	UI::addFloatProperty(getString("hi_speed_speed"), edit.hiSpeed, "%gx");
+		//	break;
+
+		//default:
+		//	// 直接不允许统一设置width
+		//	//UI::addIntProperty(getString("note_width"), edit.noteWidth, MIN_NOTE_WIDTH,
+		//	//                   MAX_NOTE_WIDTH);
+		//	/*UI::addSelectProperty(getString("step_type"), edit.stepType, stepTypes,
+		//	                      arrayLength(stepTypes));*/
+		//	UI::addSelectProperty(getString("hold_ease_type"), edit.easeType, easeTypes,
+		//	                      arrayLength(easeTypes));
+		//	UI::addSelectProperty<FlickType>(getString("flick"), edit.flickType, flickTypes,
+		//	                                 arrayLength(flickTypes));
+		//	UI::addStringProperty(getString("guide_color"), edit.guideColor);
+		//	/*UI::addSelectProperty<GuideColor>(getString("guide_color"), edit.colorType,
+		//	                                  guideColorsForString, arrayLength(guideColors));*/
+		//	/*UI::addSelectProperty<FadeType>(getString("fade_type"), edit.fadeType, fadeTypes,
+		//	                                arrayLength(fadeTypes));*/
+		//	UI::addSelectProperty(getString("damagetype"), edit.damageType, damageTypes,
+		//		arrayLength(damageTypes));
+		//	UI::addStringProperty(getString("color_html"), edit.damageColor);
+		//	UI::addCheckboxProperty(getString("synccolor"), edit.damageSyncColor);
+		//	break;
+		//}
+		//UI::endPropertyColumns();
+
+		// mod 改为两个折叠菜单
+		if (ImGui::CollapsingHeader(IO::concat(ICON_FA_COG, getString("general"), " ").c_str(),
+			ImGuiTreeNodeFlags_DefaultOpen))
 		{
-		case TimelineMode::InsertBPM:
-			UI::addFloatProperty(getString("bpm"), edit.bpm, "%g BPM");
-			edit.bpm = std::clamp(edit.bpm, MIN_BPM, MAX_BPM);
-			break;
-
-		case TimelineMode::InsertTimeSign:
-			UI::timeSignatureSelect(edit.timeSignatureNumerator, edit.timeSignatureDenominator);
-			break;
-
-		case TimelineMode::InsertHiSpeed:
-			UI::addFloatProperty(getString("hi_speed_speed"), edit.hiSpeed, "%gx");
-			break;
-
-		default:
-			// 直接不允许统一设置width
-			//UI::addIntProperty(getString("note_width"), edit.noteWidth, MIN_NOTE_WIDTH,
-			//                   MAX_NOTE_WIDTH);
-			UI::addSelectProperty(getString("step_type"), edit.stepType, stepTypes,
-			                      arrayLength(stepTypes));
-			UI::addSelectProperty(getString("ease_type"), edit.easeType, easeTypes,
-			                      arrayLength(easeTypes));
-			UI::addSelectProperty<FlickType>(getString("flick"), edit.flickType, flickTypes,
-			                                 arrayLength(flickTypes));
-			UI::addSelectProperty<GuideColor>(getString("guide_color"), edit.colorType,
-			                                  guideColorsForString, arrayLength(guideColors));
-			UI::addSelectProperty<FadeType>(getString("fade_type"), edit.fadeType, fadeTypes,
-			                                arrayLength(fadeTypes));
-
-			break;
+			UI::beginPropertyColumns();
+			UI::addSelectProperty(getString("hold_ease_type"), edit.easeType, easeTypes,
+				arrayLength(easeTypes));
+			UI::addStringProperty(getString("guide_color"), edit.guideColor);
+			UI::endPropertyColumns();
 		}
-		UI::endPropertyColumns();
+
+		if (ImGui::CollapsingHeader(IO::concat(ICON_FA_COG, getString("Danmaku"), " ").c_str(),
+			ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			UI::beginPropertyColumns();
+			UI::addSelectProperty(getString("damagetype"), edit.damageType, damageTypes,
+				arrayLength(damageTypes));
+			UI::addStringProperty(getString("color_html"), edit.damageColor);
+			UI::addCheckboxProperty(getString("synccolor"), edit.damageSyncColor);
+			UI::endPropertyColumns();
+		}
+
+
 	}
 
 	void PresetsWindow::update(ScoreContext& context, PresetManager& presetManager)

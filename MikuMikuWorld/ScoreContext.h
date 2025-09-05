@@ -22,7 +22,12 @@ namespace MikuMikuWorld
 		FadeType fadeType{ FadeType::None };
 		HoldEventType holdEventType{ HoldEventType::Event_Colorset };
 		LayerEventType layerEventType{ LayerEventType::Layer_Show };
-		std::string colorInHex{ "#000000" };
+		std::string guideColor{ "#000000" };
+		// µ¯Ä»Ïà¹Ø
+		DamageType damageType{ DamageType::Danmaku_0 };
+		std::string damageColor{ "#FFFFFF" };
+		bool damageSyncColor{ true };
+
 		int colorsetID{ 1 };
 		bool highlight{ false };
 
