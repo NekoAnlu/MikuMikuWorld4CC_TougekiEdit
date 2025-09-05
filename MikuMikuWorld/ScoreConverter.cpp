@@ -1315,7 +1315,7 @@ namespace MikuMikuWorld
 				// 弹幕颜色
 				obj["color"] = note.colorInHex;
 				// 是否与整体颜色同步
-				obj["synccolor"] = note.syncColor;
+				obj["synccolor"] = note.syncColor ? 1 : 0;
 
 				obj["beat"] = note.tick / (double)TICKS_PER_BEAT;
 				obj["width"] = note.width;
@@ -1352,7 +1352,7 @@ namespace MikuMikuWorld
 				startStep["beat"] = start.tick / (double)TICKS_PER_BEAT;
 				startStep["width"] = start.width;
 				startStep["track"] = start.lane;
-				startStep["ease"] = easeNames[(int)note.start.ease];
+				startStep["ease"] = (int)note.start.ease;
 				steps.push_back(startStep);
 
 				//中间
@@ -1363,7 +1363,7 @@ namespace MikuMikuWorld
 					stepObj["beat"] = stepNote.tick / (double)TICKS_PER_BEAT;
 					stepObj["width"] = stepNote.width;
 					stepObj["track"] = stepNote.lane;
-					stepObj["ease"] = easeNames[(int)step.ease];
+					stepObj["ease"] = (int)step.ease;
 					steps.push_back(stepObj);
 				}
 
@@ -1373,7 +1373,7 @@ namespace MikuMikuWorld
 				endStep["beat"] = end.tick / (double)TICKS_PER_BEAT;
 				endStep["width"] = end.width;
 				endStep["track"] = end.lane ;
-				endStep["ease"] = "linear";
+				endStep["ease"] = 0;
 				steps.push_back(endStep);
 
 				obj["midpoints"] = steps;
@@ -1420,7 +1420,7 @@ namespace MikuMikuWorld
 				startStep["beat"] = start.tick / (double)TICKS_PER_BEAT;
 				startStep["width"] = start.width;
 				startStep["track"] = start.lane;
-				startStep["ease"] = easeNames[(int)note.start.ease];
+				startStep["ease"] = (int)note.start.ease;
 				steps.push_back(startStep);
 
 				for (const auto& step : note.steps)
@@ -1430,12 +1430,12 @@ namespace MikuMikuWorld
 					stepObj["beat"] = stepNote.tick / (double)TICKS_PER_BEAT;
 					stepObj["width"] = stepNote.width;
 					stepObj["track"] = stepNote.lane;
-					stepObj["ease"] = easeNames[(int)step.ease];
+					stepObj["ease"] = (int)step.ease;
 					steps.push_back(stepObj);
 				}
 
 				json endStep;
-				endStep["ease"] = "linear";
+				endStep["ease"] = 0;
 				endStep["beat"] = end.tick / (double)TICKS_PER_BEAT;
 				endStep["width"] = end.width;
 				endStep["track"] = end.lane;
@@ -1575,7 +1575,8 @@ namespace MikuMikuWorld
 			score.notes[startNote.ID] = startNote;
 
 			hold.start.ID = startNote.ID;
-			hold.start.ease = getEaseTypeFromString(startPoint["ease"].get<std::string>());
+			//hold.start.ease = getEaseTypeFromString(startPoint["ease"].get<std::string>());
+			hold.start.ease = (EaseType)startPoint["ease"].get<int>();
 
 			// 处理中间点
 			for (size_t i = 1; i < points.size() - 1; i++)
@@ -1594,7 +1595,7 @@ namespace MikuMikuWorld
 				HoldStep step;
 				step.ID = midNote.ID;
 				step.type = HoldStepType::Hidden;
-				step.ease = getEaseTypeFromString(point["ease"].get<std::string>());
+				step.ease = (EaseType)point["ease"].get<int>();
 				hold.steps.push_back(step);
 			}
 
@@ -1639,7 +1640,7 @@ namespace MikuMikuWorld
 			score.notes[startNote.ID] = startNote;
 
 			hold.start.ID = startNote.ID;
-			hold.start.ease = getEaseTypeFromString(startPoint["ease"].get<std::string>());
+			hold.start.ease = (EaseType)startPoint["ease"].get<int>();
 
 			// 处理中间点
 			for (size_t i = 1; i < points.size() - 1; i++)
@@ -1658,7 +1659,7 @@ namespace MikuMikuWorld
 				HoldStep step;
 				step.ID = midNote.ID;
 				step.type = HoldStepType::Hidden;
-				step.ease = getEaseTypeFromString(point["ease"].get<std::string>());
+				step.ease = (EaseType)point["ease"].get<int>();
 				hold.steps.push_back(step);
 			}
 
