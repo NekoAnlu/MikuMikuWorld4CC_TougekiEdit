@@ -50,6 +50,7 @@ namespace MikuMikuWorld
 
 		autoSavePath = Application::getAppDir() + "auto_save";
 		autoSaveTimer.reset();
+		previewTimer.reset();
 
 		// mod 不自动更新
 		/*std::thread fetchUpdateThread(
@@ -279,6 +280,14 @@ namespace MikuMikuWorld
 		{
 			autoSave();
 			autoSaveTimer.reset();
+		}
+
+		// mod scorePreview
+		if (config.scorePreviewEnabled && previewTimer.elapsedSeconds() >= config.scorePreviewInterval)
+		{
+			//autoSave();
+			scorePreviewSave();
+			previewTimer.reset();
 		}
 
 		if (recentFileNotFoundDialog.update() == DialogResult::Yes)
@@ -960,6 +969,68 @@ namespace MikuMikuWorld
 	void ScoreEditor::help()
 	{
 		ShellExecuteW(0, 0, L"https://github.com/crash5band/MikuMikuWorld/wiki", 0, 0, SW_SHOW);
+	}
+
+	/// <summary>
+	/// mod 每几秒自动保存一份json模拟实时更新preview
+	/// </summary>
+	void ScoreEditor::scorePreviewSave()
+	{
+		std::wstring wSaveFile = IO::mbToWideStr(config.scorePreviewFile);
+		std::wstring wAutoSaveDir = IO::mbToWideStr(Application::getAppDir() + "preview");
+
+		// create auto save directory if none exists
+		if (!std::filesystem::exists(wSaveFile))
+		{
+			try {
+				// 如果没有设置preview,在editor本地创建一个文件夹保存
+				if (!std::filesystem::exists(wAutoSaveDir)) {
+					std::filesystem::create_directory(wAutoSaveDir);
+				}
+
+				std::wstring filePath = IO::mbToWideStr(Application::getAppDir() + "preview" + "\\preview.json");
+				std::ofstream ofs(filePath);
+
+				if (ofs.is_open()) 
+				{
+					ofs << "{}";
+					ofs.close();
+					std::cout << "文件创建成功。" << std::endl;
+				}
+				else 
+				{
+					std::cerr << "错误: 无法创建Preview文件" << std::endl;
+				}
+				wSaveFile = filePath;
+			}
+			catch (const std::filesystem::filesystem_error& e) {
+				std::cerr << "文件系统错误: " << e.what() << std::endl;
+			}
+		}
+
+		try
+		{
+			int oldLaneExtension = context.score.metadata.laneExtension;
+			context.score.metadata = context.workingData.toScoreMetadata();
+			context.score.metadata.laneExtension = oldLaneExtension;
+
+			json usc = ScoreConverter::scoreToTougeki(context.score);
+			std::wstring wFilename = wSaveFile;
+			IO::File uscfile(wFilename, L"w");
+
+			uscfile.write(usc.dump(config.minifyUsc ? -1 : 4));
+			uscfile.flush();
+			uscfile.close();
+		}
+		catch (std::exception& err)
+		{
+			IO::messageBox(
+				APP_NAME,
+				IO::formatString("An error occurred while exporting the score file\n%s",
+					err.what()),
+				IO::MessageBoxButtons::Ok, IO::MessageBoxIcon::Error);
+		}
+
 	}
 
 	void ScoreEditor::autoSave()

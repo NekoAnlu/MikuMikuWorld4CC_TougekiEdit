@@ -25,6 +25,9 @@ namespace MikuMikuWorld
 		UpdateAvailableDialog updateAvailableDialog{};
 
 		Stopwatch autoSaveTimer;
+		// mod
+		Stopwatch previewTimer;
+
 		std::string autoSavePath;
 		bool showImGuiDemoWindow;
 
@@ -47,6 +50,7 @@ namespace MikuMikuWorld
 		bool saveAs();
 		bool trySave(std::string);
 		void autoSave();
+		void scorePreviewSave();
 		int deleteOldAutoSave(int count);
 
 		void drawMenubar();

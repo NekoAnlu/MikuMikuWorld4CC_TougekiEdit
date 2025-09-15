@@ -1600,6 +1600,39 @@ namespace MikuMikuWorld
 						UI::endPropertyColumns();
 					}
 
+					// mod scorepreview…Ë÷√
+					if (ImGui::CollapsingHeader(getString("score_preview"),
+						ImGuiTreeNodeFlags_DefaultOpen))
+					{
+						UI::beginPropertyColumns();
+						UI::addCheckboxProperty(getString("score_preview_enable"),
+							config.scorePreviewEnabled);
+						UI::addIntProperty(getString("score_preview_interval"),
+							config.scorePreviewInterval);
+
+						std::string scorePreviewFile = config.scorePreviewFile;
+						int result =
+							UI::addFileProperty(getString("score_preview_file"), scorePreviewFile);
+						if (result == 1)
+						{
+							config.scorePreviewFile = scorePreviewFile;
+						}
+						else if (result == 2)
+						{
+							IO::FileDialog fileDialog{};
+							fileDialog.title = "Select File";
+							fileDialog.filters = { { "Json File", "*.json;*.usc" },
+												   { IO::allFilesName, IO::allFilesFilter } };
+							fileDialog.parentWindowHandle = Application::windowState.windowHandle;
+
+							if (fileDialog.openFile() == IO::FileDialogResult::OK)
+							{
+								config.scorePreviewFile = fileDialog.outputFilename;
+							}
+						}
+						UI::endPropertyColumns();
+					}
+
 					if (ImGui::CollapsingHeader(getString("theme"), ImGuiTreeNodeFlags_DefaultOpen))
 					{
 						UI::beginPropertyColumns();

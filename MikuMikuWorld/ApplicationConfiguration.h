@@ -123,6 +123,10 @@ namespace MikuMikuWorld
 		float seVolume;
 		int seProfileIndex;
 		bool debugEnabled;
+		// mod Score Preview
+		bool scorePreviewEnabled;
+		int scorePreviewInterval;
+		std::string scorePreviewFile;
 
 		InputConfiguration input;
 

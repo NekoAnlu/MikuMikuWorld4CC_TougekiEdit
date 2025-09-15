@@ -13,5 +13,6 @@ namespace MikuMikuWorld
 		void reset();
 		double elapsed() const;
 		int elapsedMinutes() const;
+		int elapsedSeconds() const;
 	};
 }

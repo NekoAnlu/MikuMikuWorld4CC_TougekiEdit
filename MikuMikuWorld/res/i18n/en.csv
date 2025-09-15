@@ -294,3 +294,7 @@ edit_layer_event,Edit Layer Event
 synccolor,Sync Color
 hold_ease_type,Hold Ease Type
 damage_color,Damage Color
+score_preview,Score Preview
+score_preview_enable,Score Preview Enable
+score_preview_file,Score Preview File
+score_preview_interval,Score Preview Interval (s)

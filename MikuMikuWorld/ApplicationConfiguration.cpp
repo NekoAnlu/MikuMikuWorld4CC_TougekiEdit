@@ -109,6 +109,13 @@ namespace MikuMikuWorld
 			autoSaveMaxCount = jsonIO::tryGetValue<int>(config["save"], "auto_save_max_count", 100);
 		}
 
+		if (jsonIO::keyExists(config, "preview"))
+		{
+			scorePreviewEnabled = jsonIO::tryGetValue<bool>(config["preview"], "score_preview_enabled", false);
+			scorePreviewInterval = jsonIO::tryGetValue<int>(config["preview"], "score_preview_interval", 5);
+			scorePreviewFile = jsonIO::tryGetValue<std::string>(config["preview"], "score_preview_file", "");
+		}
+
 		if (jsonIO::keyExists(config, "audio"))
 		{
 			seProfileIndex = jsonIO::tryGetValue<int>(config["audio"], "se_profile", 0);
@@ -195,6 +202,11 @@ namespace MikuMikuWorld
 			               { "auto_save_interval", autoSaveInterval },
 			               { "auto_save_max_count", autoSaveMaxCount } };
 
+		//mod score preview
+		config["preview"] = { { "score_preview_enabled", scorePreviewEnabled },
+						    { "score_preview_interval", scorePreviewInterval },
+						    { "score_preview_file", scorePreviewFile } };
+
 		config["audio"] = { { "se_profile", seProfileIndex },
 			                { "master_volume", masterVolume },
 			                { "bgm_volume", bgmVolume },
@@ -258,6 +270,11 @@ namespace MikuMikuWorld
 		autoSaveEnabled = true;
 		autoSaveInterval = 5;
 		autoSaveMaxCount = 100;
+
+		//mod
+		scorePreviewFile = "";
+		scorePreviewEnabled = false;
+		scorePreviewInterval = 5;
 
 		seProfileIndex = 0;
 		masterVolume = 1.0f;

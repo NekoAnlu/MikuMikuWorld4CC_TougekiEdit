@@ -13,4 +13,6 @@ namespace MikuMikuWorld
 	}
 
 	int Stopwatch::elapsedMinutes() const { return elapsed() / 60; }
+
+	int Stopwatch::elapsedSeconds() const { return elapsed(); }
 }
