@@ -1607,8 +1607,8 @@ namespace MikuMikuWorld
 						UI::beginPropertyColumns();
 						UI::addCheckboxProperty(getString("score_preview_enable"),
 							config.scorePreviewEnabled);
-						UI::addIntProperty(getString("score_preview_interval"),
-							config.scorePreviewInterval);
+						UI::addFloatProperty(getString("score_preview_interval"),
+							config.scorePreviewInterval, "%.1f", 1.0f, 10.0f);
 
 						std::string scorePreviewFile = config.scorePreviewFile;
 						int result =

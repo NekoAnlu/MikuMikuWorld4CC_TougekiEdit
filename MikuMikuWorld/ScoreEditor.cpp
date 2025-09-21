@@ -614,7 +614,7 @@ namespace MikuMikuWorld
 				context.score.metadata.laneExtension = oldLaneExtension;
 
 				//json usc = ScoreConverter::scoreToUsc(context.score);
-				json usc = ScoreConverter::scoreToTougeki(context.score);
+				json usc = ScoreConverter::scoreToTougeki(context.score, context.currentTick);
 
 
 				std::wstring wFilename = IO::mbToWideStr(fileDialog.outputFilename);
@@ -1014,7 +1014,7 @@ namespace MikuMikuWorld
 			context.score.metadata = context.workingData.toScoreMetadata();
 			context.score.metadata.laneExtension = oldLaneExtension;
 
-			json usc = ScoreConverter::scoreToTougeki(context.score);
+			json usc = ScoreConverter::scoreToTougeki(context.score, context.currentTick);
 			std::wstring wFilename = wSaveFile;
 			IO::File uscfile(wFilename, L"w");
 

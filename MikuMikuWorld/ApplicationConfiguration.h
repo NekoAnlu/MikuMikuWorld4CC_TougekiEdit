@@ -125,7 +125,7 @@ namespace MikuMikuWorld
 		bool debugEnabled;
 		// mod Score Preview
 		bool scorePreviewEnabled;
-		int scorePreviewInterval;
+		float scorePreviewInterval;
 		std::string scorePreviewFile;
 
 		InputConfiguration input;

@@ -1195,7 +1195,7 @@ namespace MikuMikuWorld
 		return score;
 	}
 
-	json ScoreConverter::scoreToTougeki(const Score& score)
+	json ScoreConverter::scoreToTougeki(const Score& score, const int playbackPosition)
 	{
 		//root
 		json root;
@@ -1207,7 +1207,9 @@ namespace MikuMikuWorld
 		std::vector<json> eventObjects;
 		std::vector<json> svObjects;
 		std::vector<json> laserObjects;
-		std::vector<json> objects;
+		std::vector<json> editorobjects;
+		std::vector<json> noteobjects;
+		// new 保存preview时间 以便同步 只存不读！
 
 		// 处理meta
 		musicData["songTitle"] = score.metadata.title;
@@ -1297,7 +1299,7 @@ namespace MikuMikuWorld
 				obj["width"] = note.width;
 				obj["track"] = note.lane;
 				obj["extraspeed"] = note.extraSpeed;
-				objects.push_back(obj);
+				noteobjects.push_back(obj);
 			}
 			// 弹幕
 			else if (note.getType() == NoteType::Damage)
@@ -1321,7 +1323,7 @@ namespace MikuMikuWorld
 				obj["width"] = note.width;
 				obj["track"] = note.lane;
 				obj["extraspeed"] = note.extraSpeed;
-				objects.push_back(obj);
+				noteobjects.push_back(obj);
 			}
 		}
 
@@ -1447,15 +1449,22 @@ namespace MikuMikuWorld
 			}
 		}
 
-		//写入json
+		// editor相关
+		json editorJson;
+		editorJson["playbackbeat"] = playbackPosition / (double)TICKS_PER_BEAT;
+		//editorobjects.push_back(editorJson);
+
+
+		// 写入json
 		root["jsonversion"] = 2;
 		root["musicdata"] = musicData;
 		root["timing"] = bpmObjects;
-		root["notes"] = objects;
+		root["notes"] = noteobjects;
 		root["rails"] = railObjects;
 		root["laser"] = laserObjects;
 		root["events"] = eventObjects;
 		root["speedchanges"] = svObjects;
+		root["editors"] = editorJson;
 		return root;
 	}
 
